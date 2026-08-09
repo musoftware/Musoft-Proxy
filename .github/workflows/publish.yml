@@ -34,10 +34,16 @@ jobs:
           
       - name: List packages
         run: dir ./nupkg
+
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: musoftware
         
       - name: Push to NuGet
         run: |
           Get-ChildItem ./nupkg/*.nupkg | ForEach-Object {
             Write-Host "Pushing $($_.Name)"
-            dotnet nuget push $_.FullName --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push $_.FullName --source https://api.nuget.org/v3/index.json --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --skip-duplicate
           }
