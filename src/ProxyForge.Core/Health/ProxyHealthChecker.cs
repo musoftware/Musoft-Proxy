@@ -72,6 +72,10 @@ namespace ProxyForge.Core
             else
             {
                 OnProxyDead?.Invoke(this, new ProxyHealthEventArgs(proxy, result));
+                if (_manager != null && _manager.AutoRemoveDeadOnTest)
+                {
+                    _manager.Remove(proxy);
+                }
             }
 
             return result;
@@ -99,6 +103,11 @@ namespace ProxyForge.Core
             });
 
             await ProxyTester.TestAllAsync(proxies, maxParallel: maxParallel, progress: innerProgress).ConfigureAwait(false);
+
+            if (_manager != null && _manager.AutoRemoveDeadOnTest)
+            {
+                _manager.RemoveDeadProxies();
+            }
         }
 
         /// <summary>

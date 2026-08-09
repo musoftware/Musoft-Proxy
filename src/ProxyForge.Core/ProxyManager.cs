@@ -135,6 +135,11 @@ namespace ProxyForge.Core
         /// </summary>
         public bool AutoSaveOnListChange { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets whether proxies evaluated as dead (IsLive == false) are automatically removed during health checks.
+        /// </summary>
+        public bool AutoRemoveDeadOnTest { get; set; } = true;
+
         private readonly IProxyStorage? _instanceStorage;
 
         /// <summary>
@@ -296,12 +301,39 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
+        /// Removes all proxies evaluated as dead (IsLive == false) from the manager.
+        /// </summary>
+        /// <returns>The number of removed dead proxies.</returns>
+        public int RemoveDeadProxies()
+        {
+            int removed = Pool.RemoveDeadProxies();
+            if (removed > 0)
+            {
+                if (AutoSaveOnListChange) SaveToStorage();
+                OnProxyListChanged();
+            }
+            return removed;
+        }
+
+        /// <summary>
         /// Retrieves the next available proxy from the internal pool.
         /// </summary>
         public ProxyInfo? GetNext(string? sessionKey = null)
         {
             if (!IsEnabled) return null;
             return Pool.GetProxy(sessionKey);
+        }
+
+        /// <summary>
+        /// Starts a sticky session binding all HTTP requests in the current async execution context to a single proxy.
+        /// Returns null if proxy routing is disabled or no proxy is available.
+        /// </summary>
+        public ProxySession? BeginSession(ProxyInfo? specificProxy = null)
+        {
+            if (!IsEnabled || Pool.Proxies.Count == 0) return null;
+            var proxy = specificProxy ?? GetNext();
+            if (proxy == null) return null;
+            return new ProxySession(this, proxy);
         }
 
         /// <summary>

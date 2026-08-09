@@ -160,5 +160,52 @@ namespace ProxyForge.Tests
             Assert.Equal("myuser", networkCred.UserName);
             Assert.Equal("mypass", networkCred.Password);
         }
+
+        [Fact]
+        public void ProxyPool_GetProxy_PrioritizesWorkingOverUntested_AndExcludesDead()
+        {
+            var pool = new ProxyPool
+            {
+                Mode = RotationMode.EveryRequest
+            };
+
+            var deadProxy = new ProxyInfo("1.1.1.1", 8080) { IsLive = false };
+            var untestedProxy = new ProxyInfo("2.2.2.2", 8080) { IsLive = null };
+            var workingProxy = new ProxyInfo("3.3.3.3", 8080) { IsLive = true };
+
+            pool.Proxies = new List<ProxyInfo> { deadProxy, untestedProxy, workingProxy };
+
+            // 1. Should pick workingProxy (3.3.3.3) over untested and dead proxies
+            var selected = pool.GetProxy();
+            Assert.NotNull(selected);
+            Assert.Equal("3.3.3.3", selected.Host);
+
+            // 2. If workingProxy is removed/dead, should fall back to untestedProxy (2.2.2.2)
+            pool.Proxies.Remove(workingProxy);
+            selected = pool.GetProxy();
+            Assert.NotNull(selected);
+            Assert.Equal("2.2.2.2", selected.Host);
+        }
+
+        [Fact]
+        public void ProxyManager_RemoveDeadProxies_RemovesOnlyDeadProxies()
+        {
+            var manager = new ProxyManager();
+            manager.Clear();
+
+            var liveProxy = new ProxyInfo("1.1.1.1", 8080) { IsLive = true };
+            var deadProxy = new ProxyInfo("2.2.2.2", 8080) { IsLive = false };
+            var untestedProxy = new ProxyInfo("3.3.3.3", 8080) { IsLive = null };
+
+            manager.AddRange(new[] { liveProxy, deadProxy, untestedProxy });
+            Assert.Equal(3, manager.Proxies.Count);
+
+            int removed = manager.RemoveDeadProxies();
+            Assert.Equal(1, removed);
+            Assert.Equal(2, manager.Proxies.Count);
+            Assert.DoesNotContain(deadProxy, manager.Proxies);
+            Assert.Contains(liveProxy, manager.Proxies);
+            Assert.Contains(untestedProxy, manager.Proxies);
+        }
     }
 }

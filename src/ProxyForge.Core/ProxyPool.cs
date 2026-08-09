@@ -114,10 +114,18 @@ namespace ProxyForge.Core
 
             lock (_lock)
             {
-                var available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive != false).ToList();
+                // Priority 1: Confirmed working proxies (IsLive == true, non-banned, not in cooldown)
+                var available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
+
+                // Priority 2: Fallback to untested proxies (IsLive == null, non-banned, not in cooldown)
                 if (available.Count == 0)
                 {
-                    // Fallback to non-banned proxies
+                    available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
+                }
+
+                // Priority 3: Final fallback to non-banned proxies
+                if (available.Count == 0)
+                {
                     available = Proxies.Where(p => !p.IsBanned).ToList();
                 }
 
@@ -265,6 +273,23 @@ namespace ProxyForge.Core
             {
                 proxy.FailCount = 0;
                 proxy.IsLive = true;
+            }
+        }
+
+        /// <summary>
+        /// Removes all proxies evaluated as dead (IsLive == false) from the pool.
+        /// </summary>
+        /// <returns>The number of removed dead proxies.</returns>
+        public int RemoveDeadProxies()
+        {
+            lock (_lock)
+            {
+                int removed = _proxies.RemoveAll(p => p.IsLive == false);
+                if (_currentProxy != null && _currentProxy.IsLive == false)
+                {
+                    _currentProxy = null;
+                }
+                return removed;
             }
         }
     }

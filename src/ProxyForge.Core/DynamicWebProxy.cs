@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Threading;
 
 namespace ProxyForge.Core
 {
@@ -9,8 +10,7 @@ namespace ProxyForge.Core
     public class DynamicWebProxy : IWebProxy
     {
         private readonly ProxyManager _manager;
-        private readonly object _lock = new object();
-        private ProxyInfo? _lastSelectedProxy;
+        private static readonly AsyncLocal<ProxyInfo?> _currentProxy = new AsyncLocal<ProxyInfo?>();
 
         /// <summary>
         /// Initializes a new instance of <see cref="DynamicWebProxy"/>.
@@ -28,16 +28,19 @@ namespace ProxyForge.Core
         {
             get
             {
-                ProxyInfo? current;
-                lock (_lock)
+                var proxy = _currentProxy.Value;
+                if (proxy != null && !string.IsNullOrEmpty(proxy.Username))
                 {
-                    current = _lastSelectedProxy;
+                    return new NetworkCredential(proxy.Username, proxy.Password);
                 }
 
-                if (current != null && !string.IsNullOrEmpty(current.Username))
+                // Fallback to next proxy if no proxy was selected yet for this async context
+                var fallback = _manager.GetNext();
+                if (fallback != null && !string.IsNullOrEmpty(fallback.Username))
                 {
-                    return new NetworkCredential(current.Username, current.Password);
+                    return new NetworkCredential(fallback.Username, fallback.Password);
                 }
+
                 return null;
             }
             set { }
@@ -53,10 +56,7 @@ namespace ProxyForge.Core
             if (!_manager.IsEnabled) return null;
 
             var proxy = _manager.GetNext();
-            lock (_lock)
-            {
-                _lastSelectedProxy = proxy;
-            }
+            _currentProxy.Value = proxy;
 
             if (proxy == null) return null;
 
