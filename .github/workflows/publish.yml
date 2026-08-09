@@ -23,14 +23,21 @@ jobs:
       - name: Restore
         run: dotnet restore ProxyForge.sln
         
-      - name: Build All
+      - name: Build
         run: dotnet build ProxyForge.sln -c Release --no-restore
         
-      - name: Pack Core
-        run: dotnet pack src/ProxyForge.Core/ProxyForge.Core.csproj -c Release -o ./nupkg --no-build
-        
-      - name: Pack WinForms
-        run: dotnet pack src/ProxyForge.WinForms/ProxyForge.WinForms.csproj -c Release -o ./nupkg --no-build
+      - name: Pack
+        run: |
+          if (!(Test-Path ./nupkg)) { New-Item -ItemType Directory -Path ./nupkg | Out-Null }
+          dotnet pack src/ProxyForge.Core/ProxyForge.Core.csproj -c Release -o ./nupkg
+          dotnet pack src/ProxyForge.WinForms/ProxyForge.WinForms.csproj -c Release -o ./nupkg
+          
+      - name: List packages
+        run: dir ./nupkg
         
       - name: Push to NuGet
-        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          Get-ChildItem ./nupkg/*.nupkg | ForEach-Object {
+            Write-Host "Pushing $($_.Name)"
+            dotnet nuget push $_.FullName --source https://api.nuget.org/v3/index.json --skip-duplicate
+          }
