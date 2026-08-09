@@ -10,7 +10,7 @@
     <!-- Package Metadata -->
     <Title>Musoft.Proxy</Title>
     <PackageId>Musoft.Proxy</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Authors>musoftware</Authors>
     <Company>Musoftware</Company>
     <Description>Ultimate Proxy Manager - Rotation, Health Checker, Free Scraper, Ban Detector for .NET</Description>

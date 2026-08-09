@@ -10,7 +10,7 @@
     <!-- Package Metadata -->
     <Title>Musoft.Proxy.Extensions</Title>
     <PackageId>Musoft.Proxy.Extensions</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Authors>musoftware</Authors>
     <Company>Musoftware</Company>
     <Description>Extensions for Musoft.Proxy including Selenium ChromeOptions integration and HttpClient rotating proxy helpers.</Description>

@@ -34,11 +34,50 @@ namespace ProxyForge.Core
 
         private static void InitializeDefaultSources()
         {
+            // ── ProxyScrape v4 & v2 APIs ──────────────────────────────────────────
+            _sources.TryAdd("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=http&country=all&format=text", ProxyType.HTTP);
+            _sources.TryAdd("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&protocol=socks5&country=all&format=text", ProxyType.SOCKS5);
             _sources.TryAdd("https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all", ProxyType.HTTP);
             _sources.TryAdd("https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks5&timeout=10000&country=all", ProxyType.SOCKS5);
+
+            // ── Curated High-Yield GitHub Raw Repositories ───────────────────────
+            _sources.TryAdd("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/monosans/proxy-list/main/proxies_anonymous/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/http_proxies.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/generated/socks5_proxies.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/mmpx12/proxy-list/master/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS5_RAW.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/http/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt", ProxyType.SOCKS5);
             _sources.TryAdd("https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt", ProxyType.HTTP);
             _sources.TryAdd("https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt", ProxyType.SOCKS5);
-            _sources.TryAdd("https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/ErcinDedeoglu/proxies/main/proxies/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/HyperBeats/proxy-list/main/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/http_proxies.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/Anonym0usWork1221/Free-Proxies/main/proxy_files/socks5_proxies.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/zloi-user/hideip.me/main/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/rdavydov/proxy-list/main/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/rdavydov/proxy-list/main/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://raw.githubusercontent.com/prxchk/proxy-list/main/socks5.txt", ProxyType.SOCKS5);
+            _sources.TryAdd("https://openproxylist.xyz/http.txt", ProxyType.HTTP);
+            _sources.TryAdd("https://openproxylist.xyz/socks5.txt", ProxyType.SOCKS5);
         }
 
         private static HttpClient CreateHttpClient()
