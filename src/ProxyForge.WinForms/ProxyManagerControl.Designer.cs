@@ -38,12 +38,16 @@ namespace ProxyForge.WinForms
             this.numRotateAfter = new System.Windows.Forms.NumericUpDown();
             this.lblActiveStrategy = new System.Windows.Forms.Label();
             this.lblCurrentProxy = new System.Windows.Forms.Label();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.txtSearch = new System.Windows.Forms.TextBox();
 
             this.pnlMain = new System.Windows.Forms.TableLayoutPanel();
             this.lstProxies = new System.Windows.Forms.ListView();
             this.colHost = new System.Windows.Forms.ColumnHeader();
             this.colPort = new System.Windows.Forms.ColumnHeader();
             this.colUsername = new System.Windows.Forms.ColumnHeader();
+            this.colCountry = new System.Windows.Forms.ColumnHeader();
+            this.colAnonymity = new System.Windows.Forms.ColumnHeader();
             this.colStatus = new System.Windows.Forms.ColumnHeader();
             this.colLatency = new System.Windows.Forms.ColumnHeader();
             this.colType = new System.Windows.Forms.ColumnHeader();
@@ -51,6 +55,9 @@ namespace ProxyForge.WinForms
             this.pnlActions = new System.Windows.Forms.FlowLayoutPanel();
             this.btnPaste = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
+            this.btnScrapeFree = new System.Windows.Forms.Button();
+            this.btnDiscoverSources = new System.Windows.Forms.Button();
+            this.btnJudge = new System.Windows.Forms.Button();
             this.btnTest = new System.Windows.Forms.Button();
             this.btnTestAll = new System.Windows.Forms.Button();
             this.btnRemove = new System.Windows.Forms.Button();
@@ -205,6 +212,8 @@ namespace ProxyForge.WinForms
             this.colHost,
             this.colPort,
             this.colUsername,
+            this.colCountry,
+            this.colAnonymity,
             this.colStatus,
             this.colLatency,
             this.colType});
@@ -220,21 +229,28 @@ namespace ProxyForge.WinForms
             this.lstProxies.View = System.Windows.Forms.View.Details;
 
             this.colHost.Text = Resources.Strings.ColHost;
-            this.colHost.Width = 140;
+            this.colHost.Width = 120;
             this.colPort.Text = Resources.Strings.ColPort;
-            this.colPort.Width = 65;
+            this.colPort.Width = 55;
             this.colUsername.Text = Resources.Strings.ColUsername;
-            this.colUsername.Width = 110;
+            this.colUsername.Width = 90;
+            this.colCountry.Text = "Country";
+            this.colCountry.Width = 65;
+            this.colAnonymity.Text = "Anonymity";
+            this.colAnonymity.Width = 85;
             this.colStatus.Text = Resources.Strings.ColStatus;
             this.colStatus.Width = 90;
             this.colLatency.Text = Resources.Strings.ColLatency;
-            this.colLatency.Width = 80;
+            this.colLatency.Width = 70;
             this.colType.Text = Resources.Strings.ColType;
-            this.colType.Width = 80;
+            this.colType.Width = 65;
 
             // pnlActions
             this.pnlActions.Controls.Add(this.btnPaste);
             this.pnlActions.Controls.Add(this.btnImport);
+            this.pnlActions.Controls.Add(this.btnScrapeFree);
+            this.pnlActions.Controls.Add(this.btnDiscoverSources);
+            this.pnlActions.Controls.Add(this.btnJudge);
             this.pnlActions.Controls.Add(this.btnTest);
             this.pnlActions.Controls.Add(this.btnTestAll);
             this.pnlActions.Controls.Add(this.btnRemove);
@@ -251,19 +267,43 @@ namespace ProxyForge.WinForms
 
             this.btnPaste.Location = new System.Drawing.Point(3, 3);
             this.btnPaste.Name = "btnPaste";
-            this.btnPaste.Size = new System.Drawing.Size(114, 30);
+            this.btnPaste.Size = new System.Drawing.Size(114, 25);
             this.btnPaste.TabIndex = 0;
             this.btnPaste.Text = Resources.Strings.PasteFromClipboard;
             this.btnPaste.UseVisualStyleBackColor = true;
             this.btnPaste.Click += new System.EventHandler(this.btnPaste_Click);
 
-            this.btnImport.Location = new System.Drawing.Point(3, 39);
+            this.btnImport.Location = new System.Drawing.Point(3, 31);
             this.btnImport.Name = "btnImport";
-            this.btnImport.Size = new System.Drawing.Size(114, 30);
+            this.btnImport.Size = new System.Drawing.Size(114, 25);
             this.btnImport.TabIndex = 1;
             this.btnImport.Text = Resources.Strings.ImportTxt;
             this.btnImport.UseVisualStyleBackColor = true;
             this.btnImport.Click += new System.EventHandler(this.btnImport_Click);
+
+            this.btnScrapeFree.Location = new System.Drawing.Point(3, 59);
+            this.btnScrapeFree.Name = "btnScrapeFree";
+            this.btnScrapeFree.Size = new System.Drawing.Size(114, 25);
+            this.btnScrapeFree.TabIndex = 8;
+            this.btnScrapeFree.Text = "⚡ Free Proxies";
+            this.btnScrapeFree.UseVisualStyleBackColor = true;
+            this.btnScrapeFree.Click += new System.EventHandler(this.btnScrapeFree_Click);
+
+            this.btnDiscoverSources.Location = new System.Drawing.Point(3, 87);
+            this.btnDiscoverSources.Name = "btnDiscoverSources";
+            this.btnDiscoverSources.Size = new System.Drawing.Size(114, 25);
+            this.btnDiscoverSources.TabIndex = 9;
+            this.btnDiscoverSources.Text = "🔍 Discover";
+            this.btnDiscoverSources.UseVisualStyleBackColor = true;
+            this.btnDiscoverSources.Click += new System.EventHandler(this.btnDiscoverSources_Click);
+
+            this.btnJudge.Location = new System.Drawing.Point(3, 115);
+            this.btnJudge.Name = "btnJudge";
+            this.btnJudge.Size = new System.Drawing.Size(114, 25);
+            this.btnJudge.TabIndex = 10;
+            this.btnJudge.Text = "👑 Judge";
+            this.btnJudge.UseVisualStyleBackColor = true;
+            this.btnJudge.Click += new System.EventHandler(this.btnJudge_Click);
 
             this.btnTest.Location = new System.Drawing.Point(3, 75);
             this.btnTest.Name = "btnTest";
@@ -453,12 +493,16 @@ namespace ProxyForge.WinForms
         private System.Windows.Forms.NumericUpDown numRotateAfter;
         private System.Windows.Forms.Label lblActiveStrategy;
         private System.Windows.Forms.Label lblCurrentProxy;
+        private System.Windows.Forms.Label lblSearch;
+        private System.Windows.Forms.TextBox txtSearch;
 
         private System.Windows.Forms.TableLayoutPanel pnlMain;
         private System.Windows.Forms.ListView lstProxies;
         private System.Windows.Forms.ColumnHeader colHost;
         private System.Windows.Forms.ColumnHeader colPort;
         private System.Windows.Forms.ColumnHeader colUsername;
+        private System.Windows.Forms.ColumnHeader colCountry;
+        private System.Windows.Forms.ColumnHeader colAnonymity;
         private System.Windows.Forms.ColumnHeader colStatus;
         private System.Windows.Forms.ColumnHeader colLatency;
         private System.Windows.Forms.ColumnHeader colType;
@@ -466,6 +510,9 @@ namespace ProxyForge.WinForms
         private System.Windows.Forms.FlowLayoutPanel pnlActions;
         private System.Windows.Forms.Button btnPaste;
         private System.Windows.Forms.Button btnImport;
+        private System.Windows.Forms.Button btnScrapeFree;
+        private System.Windows.Forms.Button btnDiscoverSources;
+        private System.Windows.Forms.Button btnJudge;
         private System.Windows.Forms.Button btnTest;
         private System.Windows.Forms.Button btnTestAll;
         private System.Windows.Forms.Button btnRemove;

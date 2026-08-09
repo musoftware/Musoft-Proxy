@@ -123,29 +123,31 @@ namespace ProxyForge.WinForms
 
             if (p.IsBanned)
             {
-                statusText = "Banned";
+                statusText = "Banned 🚫";
                 statusColor = Color.DarkRed;
             }
             else if (p.IsInCooldown)
             {
-                statusText = "Cooldown";
+                statusText = "Cooldown ⏳";
                 statusColor = Color.OrangeRed;
             }
             else if (p.IsLive.HasValue)
             {
                 if (p.IsLive.Value)
                 {
-                    statusText = Strings.StatusLive;
+                    statusText = Strings.StatusLive + " 🟢";
                     statusColor = Color.DarkGreen;
                 }
                 else
                 {
-                    statusText = Strings.StatusDead;
+                    statusText = Strings.StatusDead + " 🔴";
                     statusColor = Color.Red;
                 }
             }
 
             string latencyText = p.LatencyMs >= 0 ? $"{p.LatencyMs} ms" : "-";
+            string countryText = string.IsNullOrEmpty(p.CountryCode) ? "-" : p.CountryCode;
+            string anonymityText = string.IsNullOrEmpty(p.AnonymityLevel) ? "-" : p.AnonymityLevel;
 
             var item = new ListViewItem(p.Host)
             {
@@ -155,6 +157,14 @@ namespace ProxyForge.WinForms
 
             item.SubItems.Add(p.Port.ToString());
             item.SubItems.Add(string.IsNullOrEmpty(p.Username) ? "-" : p.Username);
+            item.SubItems.Add(countryText);
+
+            var anonSub = item.SubItems.Add(anonymityText);
+            if (string.Equals(p.AnonymityLevel, "Elite", StringComparison.OrdinalIgnoreCase))
+            {
+                anonSub.ForeColor = Color.DarkGreen;
+                anonSub.Font = new Font(lstProxies.Font, FontStyle.Bold);
+            }
 
             var statusSub = item.SubItems.Add(statusText);
             statusSub.ForeColor = statusColor;
@@ -176,31 +186,39 @@ namespace ProxyForge.WinForms
 
                     if (proxy.IsBanned)
                     {
-                        statusText = "Banned";
+                        statusText = "Banned 🚫";
                         statusColor = Color.DarkRed;
                     }
                     else if (proxy.IsInCooldown)
                     {
-                        statusText = "Cooldown";
+                        statusText = "Cooldown ⏳";
                         statusColor = Color.OrangeRed;
                     }
                     else if (proxy.IsLive.HasValue)
                     {
                         if (proxy.IsLive.Value)
                         {
-                            statusText = Strings.StatusLive;
+                            statusText = Strings.StatusLive + " 🟢";
                             statusColor = Color.DarkGreen;
                         }
                         else
                         {
-                            statusText = Strings.StatusDead;
+                            statusText = Strings.StatusDead + " 🔴";
                             statusColor = Color.Red;
                         }
                     }
 
-                    item.SubItems[3].Text = statusText;
-                    item.SubItems[3].ForeColor = statusColor;
-                    item.SubItems[4].Text = proxy.LatencyMs >= 0 ? $"{proxy.LatencyMs} ms" : "-";
+                    item.SubItems[3].Text = string.IsNullOrEmpty(proxy.CountryCode) ? "-" : proxy.CountryCode;
+                    item.SubItems[4].Text = string.IsNullOrEmpty(proxy.AnonymityLevel) ? "-" : proxy.AnonymityLevel;
+                    if (string.Equals(proxy.AnonymityLevel, "Elite", StringComparison.OrdinalIgnoreCase))
+                    {
+                        item.SubItems[4].ForeColor = Color.DarkGreen;
+                        item.SubItems[4].Font = new Font(lstProxies.Font, FontStyle.Bold);
+                    }
+
+                    item.SubItems[5].Text = statusText;
+                    item.SubItems[5].ForeColor = statusColor;
+                    item.SubItems[6].Text = proxy.LatencyMs >= 0 ? $"{proxy.LatencyMs} ms" : "-";
                     break;
                 }
             }
@@ -488,6 +506,130 @@ namespace ProxyForge.WinForms
                 btnTestAll.Enabled = true;
                 prgHealthCheck.Visible = false;
                 progressBarCheck.Visible = false;
+                UpdateStatusLabel();
+            }
+        }
+
+        private async void btnScrapeFree_Click(object sender, EventArgs e)
+        {
+            if (_isTesting) return;
+
+            _isTesting = true;
+            btnScrapeFree.Enabled = false;
+            lblTestStatus.Text = "⚡ Harvesting free proxies from public sources...";
+            lblTestStatus.ForeColor = Color.Blue;
+
+            try
+            {
+                var scraper = new FreeProxyScraper();
+                var harvested = await scraper.FetchAsync();
+                if (harvested.Count > 0)
+                {
+                    Manager.AddRange(harvested);
+                    lblTestStatus.Text = $"Successfully harvested {harvested.Count} free proxies!";
+                    lblTestStatus.ForeColor = Color.DarkGreen;
+                }
+                else
+                {
+                    OnValidationError("No free proxies were found from active sources.");
+                }
+            }
+            catch (Exception ex)
+            {
+                OnValidationError($"Scraping failed: {ex.Message}");
+            }
+            finally
+            {
+                _isTesting = false;
+                btnScrapeFree.Enabled = true;
+                UpdateStatusLabel();
+            }
+        }
+
+        private async void btnDiscoverSources_Click(object sender, EventArgs e)
+        {
+            if (_isTesting) return;
+
+            _isTesting = true;
+            btnDiscoverSources.Enabled = false;
+            lblTestStatus.Text = "🔍 Discovering new proxy list sources from DuckDuckGo...";
+            lblTestStatus.ForeColor = Color.Blue;
+
+            try
+            {
+                var scraper = new FreeProxyScraper();
+                int added = await scraper.DiscoverAndAddNewSourcesAsync();
+                lblTestStatus.Text = $"Discovered and added {added} new proxy list sources!";
+                lblTestStatus.ForeColor = Color.DarkGreen;
+            }
+            catch (Exception ex)
+            {
+                OnValidationError($"Source discovery failed: {ex.Message}");
+            }
+            finally
+            {
+                _isTesting = false;
+                btnDiscoverSources.Enabled = true;
+            }
+        }
+
+        private async void btnJudge_Click(object sender, EventArgs e)
+        {
+            if (_isTesting) return;
+
+            var targetList = lstProxies.SelectedItems.Count > 0
+                ? lstProxies.SelectedItems.Cast<ListViewItem>().Select(i => i.Tag as ProxyInfo).Where(p => p != null).Select(p => p!).ToList()
+                : Manager.Proxies.Where(p => p.IsLive == true).ToList();
+
+            if (targetList.Count == 0)
+            {
+                targetList = Manager.Proxies.ToList();
+            }
+
+            if (targetList.Count == 0)
+            {
+                OnValidationError("No proxies available to judge.");
+                return;
+            }
+
+            _isTesting = true;
+            btnJudge.Enabled = false;
+            prgHealthCheck.Visible = true;
+            prgHealthCheck.Minimum = 0;
+            prgHealthCheck.Maximum = targetList.Count;
+            prgHealthCheck.Value = 0;
+
+            lblTestStatus.Text = "👑 Judging proxy anonymity & IP leakage...";
+            lblTestStatus.ForeColor = Color.Blue;
+
+            var judge = new ProxyJudge();
+            int judgedCount = 0;
+
+            try
+            {
+                foreach (var p in targetList)
+                {
+                    await judge.JudgeAsync(p);
+                    judgedCount++;
+                    if (prgHealthCheck.Value < prgHealthCheck.Maximum)
+                    {
+                        prgHealthCheck.Value = judgedCount;
+                    }
+                    UpdateListViewItem(p);
+                }
+
+                lblTestStatus.Text = $"Judged {judgedCount} proxies successfully!";
+                lblTestStatus.ForeColor = Color.DarkGreen;
+            }
+            catch (Exception ex)
+            {
+                OnValidationError($"Proxy judging failed: {ex.Message}");
+            }
+            finally
+            {
+                _isTesting = false;
+                btnJudge.Enabled = true;
+                prgHealthCheck.Visible = false;
                 UpdateStatusLabel();
             }
         }

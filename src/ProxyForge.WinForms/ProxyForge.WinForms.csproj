@@ -9,14 +9,14 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
 
     <!-- Package Metadata -->
-    <Title>ProxyForge.WinForms</Title>
-    <PackageId>ProxyForge.WinForms</PackageId>
+    <Title>Musoft.Proxy.WinForms</Title>
+    <PackageId>Musoft.Proxy.WinForms</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Musoftware</Authors>
+    <Authors>musoftware</Authors>
     <Company>Musoftware</Company>
-    <Description>The most complete WinForms proxy manager control for ProxyForge. Supports HTTP, SOCKS5, bulk import, auto-checker, rotation, and latency test. Drop-in UserControl.</Description>
+    <Description>The most complete WinForms proxy manager control for ProxyForge / Musoft.Proxy. Supports HTTP, SOCKS5, bulk import, auto-checker, rotation, and latency test. Drop-in UserControl.</Description>
     <PackageTags>winforms;proxy;http-proxy;socks5;proxy-manager;csharp;proxy-checker;proxy-rotator</PackageTags>
-    <RepositoryUrl>https://github.com/musoftware/ProxyForge</RepositoryUrl>
+    <RepositoryUrl>https://github.com/musoftware/Musoft-Proxy</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
