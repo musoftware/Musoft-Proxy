@@ -16,58 +16,71 @@ namespace ProxyForge.Core
     {
         private const string DefaultTestUrl = ProxyConstants.DefaultTestUrl;
 
+        private static readonly string[] FallbackTestUrls = new[]
+        {
+            "http://checkip.amazonaws.com",
+            "https://api.ipify.org",
+            "http://ip-api.com/line",
+            "https://icanhazip.com"
+        };
+
         /// <summary>
         /// Asynchronously tests a single proxy for connectivity and measures latency.
         /// </summary>
         /// <param name="proxy">The proxy to test.</param>
         /// <param name="timeoutMs">Timeout in milliseconds (default 7000ms).</param>
-        /// <param name="testUrl">The remote URL endpoint to test against (default https://api.ipify.org).</param>
+        /// <param name="testUrl">The remote URL endpoint to test against.</param>
         /// <returns>A <see cref="TestResult"/> containing test metrics.</returns>
         public static async Task<TestResult> TestAsync(ProxyInfo proxy, int timeoutMs = ProxyConstants.DefaultTestTimeoutMs, string testUrl = DefaultTestUrl)
         {
             if (proxy == null) throw new ArgumentNullException(nameof(proxy));
 
+            var urlsToTry = new List<string> { testUrl };
+            foreach (var fallback in FallbackTestUrls)
+            {
+                if (!urlsToTry.Contains(fallback, StringComparer.OrdinalIgnoreCase))
+                    urlsToTry.Add(fallback);
+            }
+
             var result = new TestResult { Proxy = proxy };
             var sw = Stopwatch.StartNew();
 
-            try
+            foreach (var targetUrl in urlsToTry)
             {
-                var handler = ProxyFactory.CreateHandler(proxy);
-                using var client = new HttpClient(handler, disposeHandler: true);
-                client.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
-
-                using var response = await client.GetAsync(testUrl).ConfigureAwait(false);
-                sw.Stop();
-
-                if (response.IsSuccessStatusCode)
+                sw.Restart();
+                try
                 {
-                    string content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    result.IsSuccess = true;
-                    result.LatencyMs = (int)sw.ElapsedMilliseconds;
-                    result.IP = content.Trim();
+                    var handler = ProxyFactory.CreateHandler(proxy);
+                    using var client = new HttpClient(handler, disposeHandler: true);
+                    client.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
 
-                    proxy.IsLive = true;
-                    proxy.LatencyMs = result.LatencyMs;
-                    proxy.LastChecked = DateTime.UtcNow;
+                    using var response = await client.GetAsync(targetUrl).ConfigureAwait(false);
+                    sw.Stop();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        result.IsSuccess = true;
+                        result.LatencyMs = (int)sw.ElapsedMilliseconds;
+                        result.IP = content.Trim();
+
+                        proxy.IsLive = true;
+                        proxy.LatencyMs = result.LatencyMs;
+                        proxy.LastChecked = DateTime.UtcNow;
+                        return result;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    result.IsSuccess = false;
-                    result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
-                    proxy.IsLive = false;
-                    proxy.LatencyMs = -1;
-                    proxy.LastChecked = DateTime.UtcNow;
+                    sw.Stop();
+                    result.ErrorMessage = ex.Message;
                 }
             }
-            catch (Exception ex)
-            {
-                sw.Stop();
-                result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
-                proxy.IsLive = false;
-                proxy.LatencyMs = -1;
-                proxy.LastChecked = DateTime.UtcNow;
-            }
+
+            result.IsSuccess = false;
+            proxy.IsLive = false;
+            proxy.LatencyMs = -1;
+            proxy.LastChecked = DateTime.UtcNow;
 
             return result;
         }

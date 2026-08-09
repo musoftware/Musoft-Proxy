@@ -19,6 +19,20 @@ namespace ProxyForge.Core
             if (proxy == null) throw new ArgumentNullException(nameof(proxy));
 
             var handler = new HttpClientHandler();
+#if !NET462
+            try
+            {
+                handler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+            }
+            catch { }
+#else
+            try
+            {
+                ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+            }
+            catch { }
+#endif
+
             if (proxy.Type == ProxyType.SOCKS5)
             {
                 if (string.IsNullOrEmpty(proxy.Username))
