@@ -169,10 +169,20 @@ namespace ProxyForge.Core
             }
 
             // Periodic auto-refresh of sources in background without blocking current fetch
-            if (DateTime.Now - _lastDiscovery > SourceDiscoveryInterval)
+            if (DateTime.UtcNow - _lastDiscovery > SourceDiscoveryInterval)
             {
-                _lastDiscovery = DateTime.Now;
-                _ = Task.Run(async () => await DiscoverAndAddNewSourcesAsync().ConfigureAwait(false));
+                _lastDiscovery = DateTime.UtcNow;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await DiscoverAndAddNewSourcesAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Background source discovery error: {ex.Message}");
+                    }
+                });
             }
 
             var bag = new ConcurrentBag<ProxyInfo>();
@@ -196,9 +206,9 @@ namespace ProxyForge.Core
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore per-source errors gracefully
+                    System.Diagnostics.Debug.WriteLine($"Error fetching source {kvp.Key}: {ex.Message}");
                 }
             });
 
@@ -248,9 +258,9 @@ namespace ProxyForge.Core
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback gracefully on HTML scraping errors
+                System.Diagnostics.Debug.WriteLine($"HTML scraping error: {ex.Message}");
             }
 
             var results = bag
@@ -263,7 +273,17 @@ namespace ProxyForge.Core
             // Self-healing: if fetched results are low (< 20), trigger background discovery for future runs
             if (results.Count < 20)
             {
-                _ = Task.Run(async () => await DiscoverAndAddNewSourcesAsync().ConfigureAwait(false));
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await DiscoverAndAddNewSourcesAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Low results discovery error: {ex.Message}");
+                    }
+                });
             }
 
             return results;

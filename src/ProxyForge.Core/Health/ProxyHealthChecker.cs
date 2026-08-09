@@ -122,9 +122,9 @@ namespace ProxyForge.Core
                     {
                         break;
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Ignore periodic loop exceptions
+                        System.Diagnostics.Debug.WriteLine($"ProxyHealthChecker auto-check error: {ex.Message}");
                     }
                 }
             }, cancellationToken);

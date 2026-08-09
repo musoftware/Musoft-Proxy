@@ -28,7 +28,7 @@ namespace ProxyForge.Core
         /// <summary>
         /// Gets whether the proxy provides Elite high-anonymity protection.
         /// </summary>
-        public bool IsElite => string.Equals(AnonymityLevel, "Elite", StringComparison.OrdinalIgnoreCase);
+        public bool IsElite => string.Equals(AnonymityLevel, ProxyConstants.Anonymity.Elite, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ namespace ProxyForge.Core
     /// </summary>
     public class ProxyJudge
     {
-        private const string DefaultJudgeUrl = "https://api.ipify.org?format=json";
+        private const string DefaultJudgeUrl = ProxyConstants.DefaultJudgeUrl;
 
         /// <summary>
         /// Asynchronously judges a proxy's external IP, country, and anonymity level.
@@ -49,7 +49,7 @@ namespace ProxyForge.Core
 
             var result = new JudgeResult
             {
-                AnonymityLevel = "Transparent"
+                AnonymityLevel = ProxyConstants.Anonymity.Transparent
             };
 
             try
@@ -71,8 +71,9 @@ namespace ProxyForge.Core
                                 result.Ip = ipElem.GetString() ?? string.Empty;
                             }
                         }
-                        catch
+                        catch (JsonException ex)
                         {
+                            System.Diagnostics.Debug.WriteLine($"ProxyJudge JSON parse error: {ex.Message}");
                             result.Ip = content.Trim();
                         }
                     }
@@ -94,12 +95,12 @@ namespace ProxyForge.Core
 
                     if (headerProxyLeak)
                     {
-                        result.AnonymityLevel = "Transparent";
+                        result.AnonymityLevel = ProxyConstants.Anonymity.Transparent;
                     }
                     else
                     {
                         // High anonymity / Elite when no proxy headers are exposed
-                        result.AnonymityLevel = "Elite";
+                        result.AnonymityLevel = ProxyConstants.Anonymity.Elite;
                     }
 
                     proxy.AnonymityLevel = result.AnonymityLevel;
@@ -109,9 +110,10 @@ namespace ProxyForge.Core
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                result.AnonymityLevel = "Unknown";
+                System.Diagnostics.Debug.WriteLine($"ProxyJudge error: {ex.Message}");
+                result.AnonymityLevel = ProxyConstants.Anonymity.Unknown;
             }
 
             return result;

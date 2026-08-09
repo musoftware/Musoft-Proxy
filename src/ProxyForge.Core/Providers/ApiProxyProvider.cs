@@ -10,6 +10,15 @@ namespace ProxyForge.Core
     /// </summary>
     public class ApiProxyProvider : IProxyProvider
     {
+        private static readonly HttpClient SharedClient = CreateHttpClient();
+
+        private static HttpClient CreateHttpClient()
+        {
+            var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+            return client;
+        }
+
         /// <summary>
         /// Gets or sets the target API URL.
         /// </summary>
@@ -39,10 +48,7 @@ namespace ProxyForge.Core
                 return new List<ProxyInfo>();
             }
 
-            using var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(10);
-
-            string content = await client.GetStringAsync(ApiUrl).ConfigureAwait(false);
+            string content = await SharedClient.GetStringAsync(ApiUrl).ConfigureAwait(false);
             return ProxyParser.Parse(content, DefaultType);
         }
     }

@@ -61,7 +61,7 @@ namespace ProxyForge.Core
 
             if (_sessions.TryGetValue(key, out var entry))
             {
-                if (DateTime.Now < entry.ExpiresAt && availableProxies.Any(p => p == entry.Proxy) && !entry.Proxy.IsInCooldown && !entry.Proxy.IsBanned)
+                if (DateTime.UtcNow < entry.ExpiresAt && availableProxies.Any(p => p.Equals(entry.Proxy)) && !entry.Proxy.IsInCooldown && !entry.Proxy.IsBanned)
                 {
                     return entry.Proxy;
                 }
@@ -73,7 +73,7 @@ namespace ProxyForge.Core
                 _sessions[key] = new StickyEntry
                 {
                     Proxy = newProxy,
-                    ExpiresAt = DateTime.Now.Add(StickyDuration)
+                    ExpiresAt = DateTime.UtcNow.Add(StickyDuration)
                 };
             }
 

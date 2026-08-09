@@ -51,6 +51,14 @@ namespace ProxyForge.WinForms
             InitializeDropdowns();
             Manager.ProxyListChanged += Manager_ProxyListChanged;
             Manager.Pool.OnProxyRotated += Pool_OnProxyRotated;
+
+            RefreshListView();
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            RefreshListView();
         }
 
         /// <summary>
@@ -116,10 +124,10 @@ namespace ProxyForge.WinForms
             UpdateStatusLabel();
         }
 
-        private ListViewItem CreateListViewItem(ProxyInfo p)
+        private static void GetStatusInfo(ProxyInfo p, out string statusText, out Color statusColor)
         {
-            string statusText = Strings.StatusUnchecked;
-            Color statusColor = Color.Gray;
+            statusText = Strings.StatusUnchecked;
+            statusColor = Color.Gray;
 
             if (p.IsBanned)
             {
@@ -144,6 +152,11 @@ namespace ProxyForge.WinForms
                     statusColor = Color.Red;
                 }
             }
+        }
+
+        private ListViewItem CreateListViewItem(ProxyInfo p)
+        {
+            GetStatusInfo(p, out string statusText, out Color statusColor);
 
             string latencyText = p.LatencyMs >= 0 ? $"{p.LatencyMs} ms" : "-";
             string countryText = string.IsNullOrEmpty(p.CountryCode) ? "-" : p.CountryCode;
@@ -160,7 +173,7 @@ namespace ProxyForge.WinForms
             item.SubItems.Add(countryText);
 
             var anonSub = item.SubItems.Add(anonymityText);
-            if (string.Equals(p.AnonymityLevel, "Elite", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(p.AnonymityLevel, ProxyConstants.Anonymity.Elite, StringComparison.OrdinalIgnoreCase))
             {
                 anonSub.ForeColor = Color.DarkGreen;
                 anonSub.Font = new Font(lstProxies.Font, FontStyle.Bold);
@@ -181,36 +194,11 @@ namespace ProxyForge.WinForms
             {
                 if (item.Tag is ProxyInfo p && ReferenceEquals(p, proxy))
                 {
-                    string statusText = Strings.StatusUnchecked;
-                    Color statusColor = Color.Gray;
-
-                    if (proxy.IsBanned)
-                    {
-                        statusText = "Banned 🚫";
-                        statusColor = Color.DarkRed;
-                    }
-                    else if (proxy.IsInCooldown)
-                    {
-                        statusText = "Cooldown ⏳";
-                        statusColor = Color.OrangeRed;
-                    }
-                    else if (proxy.IsLive.HasValue)
-                    {
-                        if (proxy.IsLive.Value)
-                        {
-                            statusText = Strings.StatusLive + " 🟢";
-                            statusColor = Color.DarkGreen;
-                        }
-                        else
-                        {
-                            statusText = Strings.StatusDead + " 🔴";
-                            statusColor = Color.Red;
-                        }
-                    }
+                    GetStatusInfo(proxy, out string statusText, out Color statusColor);
 
                     item.SubItems[3].Text = string.IsNullOrEmpty(proxy.CountryCode) ? "-" : proxy.CountryCode;
                     item.SubItems[4].Text = string.IsNullOrEmpty(proxy.AnonymityLevel) ? "-" : proxy.AnonymityLevel;
-                    if (string.Equals(proxy.AnonymityLevel, "Elite", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(proxy.AnonymityLevel, ProxyConstants.Anonymity.Elite, StringComparison.OrdinalIgnoreCase))
                     {
                         item.SubItems[4].ForeColor = Color.DarkGreen;
                         item.SubItems[4].Font = new Font(lstProxies.Font, FontStyle.Bold);
@@ -255,6 +243,7 @@ namespace ProxyForge.WinForms
         private void chkEnableProxy_CheckedChanged(object sender, EventArgs e)
         {
             Manager.IsEnabled = chkEnableProxy.Checked;
+            Manager.SaveToStorage();
         }
 
         private void cmbProxyType_SelectedIndexChanged(object sender, EventArgs e)
@@ -262,6 +251,7 @@ namespace ProxyForge.WinForms
             if (cmbProxyType.SelectedItem is ProxyType type)
             {
                 Manager.DefaultType = type;
+                Manager.SaveToStorage();
             }
         }
 
@@ -287,12 +277,14 @@ namespace ProxyForge.WinForms
                         break;
                 }
                 UpdateStrategyLabel();
+                Manager.SaveToStorage();
             }
         }
 
         private void numRotateAfter_ValueChanged(object sender, EventArgs e)
         {
             Manager.Pool.RotateAfter = (int)numRotateAfter.Value;
+            Manager.SaveToStorage();
         }
 
         private void btnPaste_Click(object sender, EventArgs e)
@@ -394,7 +386,18 @@ namespace ProxyForge.WinForms
 
         private void btnClear_Click(object sender, EventArgs e)
         {
-            Manager.Clear();
+            if (Manager.Proxies.Count == 0) return;
+
+            var result = MessageBox.Show(
+                "Are you sure you want to clear all proxies?",
+                "Clear All Proxies",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                Manager.Clear();
+            }
         }
 
         private async void btnTest_Click(object sender, EventArgs e)

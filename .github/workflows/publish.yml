@@ -26,11 +26,21 @@ jobs:
       - name: Build
         run: dotnet build ProxyForge.sln -c Release --no-restore
         
+      - name: Extract Version from Tag
+        id: get_version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $ver = $tag -replace '^v', ''
+          Write-Host "Publishing package version: $ver"
+          "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Pack
         run: |
           if (!(Test-Path ./nupkg)) { New-Item -ItemType Directory -Path ./nupkg | Out-Null }
-          dotnet pack src/ProxyForge.Core/ProxyForge.Core.csproj -c Release -o ./nupkg
-          dotnet pack src/ProxyForge.WinForms/ProxyForge.WinForms.csproj -c Release -o ./nupkg
+          dotnet pack src/ProxyForge.Core/ProxyForge.Core.csproj -c Release -o ./nupkg -p:Version=${{ env.VERSION }}
+          dotnet pack src/ProxyForge.Extensions/ProxyForge.Extensions.csproj -c Release -o ./nupkg -p:Version=${{ env.VERSION }}
+          dotnet pack src/ProxyForge.WinForms/ProxyForge.WinForms.csproj -c Release -o ./nupkg -p:Version=${{ env.VERSION }}
           
       - name: List packages
         run: dir ./nupkg

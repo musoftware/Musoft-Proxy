@@ -37,12 +37,30 @@ namespace ProxyForge.Core
         private readonly object _lock = new object();
         private ProxyInfo? _currentProxy;
         private int _requestCounter = 0;
-        private DateTime _lastRotationTime = DateTime.Now;
+        private DateTime _lastRotationTime = DateTime.UtcNow;
+
+        private List<ProxyInfo> _proxies = new List<ProxyInfo>();
 
         /// <summary>
         /// Gets or sets the list of proxies managed by this pool.
         /// </summary>
-        public List<ProxyInfo> Proxies { get; set; } = new List<ProxyInfo>();
+        public List<ProxyInfo> Proxies
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _proxies;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _proxies = value ?? new List<ProxyInfo>();
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the rotation strategy algorithm.
@@ -70,6 +88,16 @@ namespace ProxyForge.Core
         public TimeSpan StickyDuration { get; set; } = TimeSpan.FromMinutes(10);
 
         /// <summary>
+        /// Gets or sets maximum failure threshold before placing a proxy into cooldown.
+        /// </summary>
+        public int MaxFailCount { get; set; } = 3;
+
+        /// <summary>
+        /// Gets or sets the cooldown duration applied when a proxy fails or is banned.
+        /// </summary>
+        public TimeSpan CooldownDuration { get; set; } = TimeSpan.FromMinutes(10);
+
+        /// <summary>
         /// Occurs whenever a proxy rotation is triggered.
         /// </summary>
         public event EventHandler<ProxyRotatedEventArgs>? OnProxyRotated;
@@ -81,6 +109,9 @@ namespace ProxyForge.Core
         /// <returns>A selected <see cref="ProxyInfo"/> or null if pool is empty.</returns>
         public ProxyInfo? GetProxy(string? sessionKey = null)
         {
+            ProxyRotatedEventArgs? eventToRaise = null;
+            ProxyInfo? selectedResult = null;
+
             lock (_lock)
             {
                 var available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive != false).ToList();
@@ -118,9 +149,9 @@ namespace ProxyForge.Core
                             break;
 
                         case RotationMode.EveryNSeconds:
-                            if ((DateTime.Now - _lastRotationTime).TotalSeconds >= RotateAfterSeconds)
+                            if ((DateTime.UtcNow - _lastRotationTime).TotalSeconds >= RotateAfterSeconds)
                             {
-                                _lastRotationTime = DateTime.Now;
+                                _lastRotationTime = DateTime.UtcNow;
                                 shouldRotate = true;
                             }
                             break;
@@ -135,7 +166,7 @@ namespace ProxyForge.Core
                                 }
                                 else
                                 {
-                                    stickyProxy.LastUsed = DateTime.Now;
+                                    stickyProxy.LastUsed = DateTime.UtcNow;
                                     return stickyProxy;
                                 }
                             }
@@ -150,25 +181,34 @@ namespace ProxyForge.Core
 
                     if (newProxy != null)
                     {
-                        newProxy.LastUsed = DateTime.Now;
+                        newProxy.LastUsed = DateTime.UtcNow;
                         _currentProxy = newProxy;
 
                         if (oldProxy != newProxy)
                         {
-                            OnProxyRotated?.Invoke(this, new ProxyRotatedEventArgs(oldProxy, newProxy));
+                            eventToRaise = new ProxyRotatedEventArgs(oldProxy, newProxy);
                         }
                     }
 
-                    return newProxy;
+                    selectedResult = newProxy;
                 }
-
-                if (_currentProxy != null)
+                else
                 {
-                    _currentProxy.LastUsed = DateTime.Now;
-                }
+                    if (_currentProxy != null)
+                    {
+                        _currentProxy.LastUsed = DateTime.UtcNow;
+                    }
 
-                return _currentProxy;
+                    selectedResult = _currentProxy;
+                }
             }
+
+            if (eventToRaise != null)
+            {
+                OnProxyRotated?.Invoke(this, eventToRaise);
+            }
+
+            return selectedResult;
         }
 
         /// <summary>
@@ -186,9 +226,9 @@ namespace ProxyForge.Core
             lock (_lock)
             {
                 proxy.FailCount++;
-                if (proxy.IsBanned || proxy.FailCount >= 3)
+                if (proxy.IsBanned || proxy.FailCount >= MaxFailCount)
                 {
-                    proxy.CooldownUntil = DateTime.Now.AddMinutes(10);
+                    proxy.CooldownUntil = DateTime.UtcNow.Add(CooldownDuration);
                     proxy.IsLive = false;
                 }
             }
@@ -208,7 +248,7 @@ namespace ProxyForge.Core
                 lock (_lock)
                 {
                     proxyUsed.IsBanned = true;
-                    proxyUsed.CooldownUntil = DateTime.Now.AddMinutes(10);
+                    proxyUsed.CooldownUntil = DateTime.UtcNow.Add(CooldownDuration);
                     proxyUsed.IsLive = false;
                 }
             }

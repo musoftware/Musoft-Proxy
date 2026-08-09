@@ -10,17 +10,23 @@ namespace DemoApp
     {
         public MainForm()
         {
+            // Configure storage persistence method first before initializing components
+            ProxyManager.SetStorageMethod(StorageMethod.JsonFile);
+
             InitializeComponent();
 
-            // Example: Pre-seed sample proxies for demo purposes
-            var sampleProxies = ProxyParser.Parse(@"
-                # Sample proxies format demonstration
-                127.0.0.1:8080
-                http://user:secret123@192.168.1.50:8080
-                socks5://10.0.0.5:1080
-            ", ProxyType.HTTP);
+            // Pre-seed sample proxies only when storage is empty
+            if (proxyControl.Manager.Proxies.Count == 0)
+            {
+                var sampleProxies = ProxyParser.Parse(@"
+                    # Sample proxies format demonstration
+                    127.0.0.1:8080
+                    http://user:secret123@192.168.1.50:8080
+                    socks5://10.0.0.5:1080
+                ", ProxyType.HTTP);
 
-            proxyControl.Manager.AddRange(sampleProxies);
+                proxyControl.Manager.AddRange(sampleProxies);
+            }
         }
 
         private async void btnTestHttpClient_Click(object sender, EventArgs e)

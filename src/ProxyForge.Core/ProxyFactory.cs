@@ -10,21 +10,25 @@ namespace ProxyForge.Core
     public static class ProxyFactory
     {
         /// <summary>
-        /// Creates an <see cref="HttpClient"/> configured to route requests through a specific <see cref="ProxyInfo"/>.
+        /// Creates an <see cref="HttpClientHandler"/> configured for the specified <see cref="ProxyInfo"/>.
         /// </summary>
         /// <param name="proxy">Target proxy instance.</param>
-        /// <returns>A new <see cref="HttpClient"/>.</returns>
-        public static HttpClient CreateClient(ProxyInfo proxy)
+        /// <returns>A configured <see cref="HttpClientHandler"/>.</returns>
+        public static HttpClientHandler CreateHandler(this ProxyInfo proxy)
         {
             if (proxy == null) throw new ArgumentNullException(nameof(proxy));
 
             var handler = new HttpClientHandler();
             if (proxy.Type == ProxyType.SOCKS5)
             {
-                handler.Proxy = new MihaZupan.HttpToSocks5Proxy(
-                    proxy.Host, proxy.Port,
-                    string.IsNullOrEmpty(proxy.Username) ? null : proxy.Username,
-                    string.IsNullOrEmpty(proxy.Password) ? null : proxy.Password);
+                if (string.IsNullOrEmpty(proxy.Username))
+                {
+                    handler.Proxy = new MihaZupan.HttpToSocks5Proxy(proxy.Host, proxy.Port);
+                }
+                else
+                {
+                    handler.Proxy = new MihaZupan.HttpToSocks5Proxy(proxy.Host, proxy.Port, proxy.Username, proxy.Password);
+                }
             }
             else
             {
@@ -36,7 +40,18 @@ namespace ProxyForge.Core
                 handler.Proxy = webProxy;
             }
 
-            return new HttpClient(handler, disposeHandler: true);
+            return handler;
+        }
+
+        /// <summary>
+        /// Creates an <see cref="HttpClient"/> configured to route requests through a specific <see cref="ProxyInfo"/>.
+        /// </summary>
+        /// <param name="proxy">Target proxy instance.</param>
+        /// <returns>A new <see cref="HttpClient"/>.</returns>
+        public static HttpClient CreateClient(ProxyInfo proxy)
+        {
+            if (proxy == null) throw new ArgumentNullException(nameof(proxy));
+            return new HttpClient(CreateHandler(proxy), disposeHandler: true);
         }
 
         /// <summary>

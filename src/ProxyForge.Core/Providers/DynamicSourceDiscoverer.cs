@@ -69,9 +69,9 @@ namespace ProxyForge.Core
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore query search exceptions and continue to next query
+                    System.Diagnostics.Debug.WriteLine($"DynamicSourceDiscoverer query error: {ex.Message}");
                 }
             }
 

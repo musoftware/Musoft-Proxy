@@ -18,7 +18,7 @@ namespace ProxyForge.Core
                 return null;
 
             int count = availableProxies.Count;
-            int nextIndex = Math.Abs(Interlocked.Increment(ref _index)) % count;
+            int nextIndex = (Interlocked.Increment(ref _index) & int.MaxValue) % count;
             return availableProxies[nextIndex];
         }
     }

@@ -25,6 +25,15 @@ namespace ProxyForge.WinForms
         public ProxyManagerForm()
         {
             InitializeComponent();
+            FormClosing += ProxyManagerForm_FormClosing;
+        }
+
+        private void ProxyManagerForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (DialogResult == DialogResult.OK)
+            {
+                Manager.SaveToStorage();
+            }
         }
     }
 }

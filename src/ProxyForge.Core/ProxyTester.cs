@@ -14,7 +14,7 @@ namespace ProxyForge.Core
     /// </summary>
     public static class ProxyTester
     {
-        private const string DefaultTestUrl = "https://api.ipify.org";
+        private const string DefaultTestUrl = ProxyConstants.DefaultTestUrl;
 
         /// <summary>
         /// Asynchronously tests a single proxy for connectivity and measures latency.
@@ -23,7 +23,7 @@ namespace ProxyForge.Core
         /// <param name="timeoutMs">Timeout in milliseconds (default 7000ms).</param>
         /// <param name="testUrl">The remote URL endpoint to test against (default https://api.ipify.org).</param>
         /// <returns>A <see cref="TestResult"/> containing test metrics.</returns>
-        public static async Task<TestResult> TestAsync(ProxyInfo proxy, int timeoutMs = 7000, string testUrl = DefaultTestUrl)
+        public static async Task<TestResult> TestAsync(ProxyInfo proxy, int timeoutMs = ProxyConstants.DefaultTestTimeoutMs, string testUrl = DefaultTestUrl)
         {
             if (proxy == null) throw new ArgumentNullException(nameof(proxy));
 
@@ -32,26 +32,7 @@ namespace ProxyForge.Core
 
             try
             {
-                var handler = new HttpClientHandler();
-                if (proxy.Type == ProxyType.SOCKS5)
-                {
-                    handler.Proxy = new MihaZupan.HttpToSocks5Proxy(
-                        proxy.Host,
-                        proxy.Port,
-                        string.IsNullOrEmpty(proxy.Username) ? null : proxy.Username,
-                        string.IsNullOrEmpty(proxy.Password) ? null : proxy.Password
-                    );
-                }
-                else
-                {
-                    var webProxy = new WebProxy(proxy.Host, proxy.Port);
-                    if (!string.IsNullOrEmpty(proxy.Username))
-                    {
-                        webProxy.Credentials = new NetworkCredential(proxy.Username, proxy.Password);
-                    }
-                    handler.Proxy = webProxy;
-                }
-
+                var handler = ProxyFactory.CreateHandler(proxy);
                 using var client = new HttpClient(handler, disposeHandler: true);
                 client.Timeout = TimeSpan.FromMilliseconds(timeoutMs);
 
@@ -67,7 +48,7 @@ namespace ProxyForge.Core
 
                     proxy.IsLive = true;
                     proxy.LatencyMs = result.LatencyMs;
-                    proxy.LastChecked = DateTime.Now;
+                    proxy.LastChecked = DateTime.UtcNow;
                 }
                 else
                 {
@@ -75,7 +56,7 @@ namespace ProxyForge.Core
                     result.ErrorMessage = $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
                     proxy.IsLive = false;
                     proxy.LatencyMs = -1;
-                    proxy.LastChecked = DateTime.Now;
+                    proxy.LastChecked = DateTime.UtcNow;
                 }
             }
             catch (Exception ex)
@@ -85,7 +66,7 @@ namespace ProxyForge.Core
                 result.ErrorMessage = ex.Message;
                 proxy.IsLive = false;
                 proxy.LatencyMs = -1;
-                proxy.LastChecked = DateTime.Now;
+                proxy.LastChecked = DateTime.UtcNow;
             }
 
             return result;

@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace ProxyForge.Core
 {
@@ -82,11 +83,12 @@ namespace ProxyForge.Core
         /// <summary>
         /// Gets whether the proxy is currently in cooldown mode due to recent failures.
         /// </summary>
-        public bool IsInCooldown => DateTime.Now < CooldownUntil;
+        public bool IsInCooldown => DateTime.UtcNow < CooldownUntil;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProxyInfo"/>.
         /// </summary>
+        [JsonConstructor]
         public ProxyInfo() { }
 
         /// <summary>
@@ -142,6 +144,35 @@ namespace ProxyForge.Core
                 return $"{Host}:{Port}:{Username}:{Password}";
             }
             return $"{Host}:{Port}";
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj)
+        {
+            if (obj is ProxyInfo other)
+            {
+                return Type == other.Type &&
+                       string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
+                       Port == other.Port &&
+                       string.Equals(Username, other.Username, StringComparison.Ordinal) &&
+                       string.Equals(Password, other.Password, StringComparison.Ordinal);
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + (Host != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Host) : 0);
+                hash = hash * 31 + Port.GetHashCode();
+                hash = hash * 31 + (Username != null ? Username.GetHashCode() : 0);
+                hash = hash * 31 + (Password != null ? Password.GetHashCode() : 0);
+                hash = hash * 31 + Type.GetHashCode();
+                return hash;
+            }
         }
 
         /// <summary>

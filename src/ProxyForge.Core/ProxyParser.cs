@@ -38,8 +38,17 @@ namespace ProxyForge.Core
                 int hashIdx = line.IndexOf('#');
                 if (hashIdx >= 0) line = line.Substring(0, hashIdx).Trim();
 
-                int doubleSlashIdx = line.IndexOf("//", StringComparison.Ordinal);
-                if (doubleSlashIdx >= 0 && !line.Contains("://")) line = line.Substring(0, doubleSlashIdx).Trim();
+                if (line.Contains("://"))
+                {
+                    int schemeIdx = line.IndexOf("://", StringComparison.Ordinal);
+                    int commentIdx = line.IndexOf("//", schemeIdx + 3, StringComparison.Ordinal);
+                    if (commentIdx >= 0) line = line.Substring(0, commentIdx).Trim();
+                }
+                else
+                {
+                    int doubleSlashIdx = line.IndexOf("//", StringComparison.Ordinal);
+                    if (doubleSlashIdx >= 0) line = line.Substring(0, doubleSlashIdx).Trim();
+                }
 
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -121,7 +130,7 @@ namespace ProxyForge.Core
                 }
             }
 
-            // 3. Try colon-separated formats: host:port or host:port:user:pass
+            // 3. Try colon-separated formats: host:port, host:port:user:pass, or user:pass:host:port
             string cleaned = line;
             if (cleaned.Contains("://"))
             {
@@ -140,12 +149,21 @@ namespace ProxyForge.Core
             }
             else if (parts.Length == 4)
             {
-                string host = parts[0].Trim();
-                if (int.TryParse(parts[1].Trim(), out int port) && port > 0 && port <= 65535)
+                // Format A: host:port:user:pass
+                if (int.TryParse(parts[1].Trim(), out int port1) && port1 > 0 && port1 <= 65535)
                 {
+                    string host = parts[0].Trim();
                     string user = parts[2].Trim();
                     string pass = parts[3].Trim();
-                    return new ProxyInfo(host, port, user, pass, detectedType);
+                    return new ProxyInfo(host, port1, user, pass, detectedType);
+                }
+                // Format B: user:pass:host:port
+                if (int.TryParse(parts[3].Trim(), out int port3) && port3 > 0 && port3 <= 65535)
+                {
+                    string user = parts[0].Trim();
+                    string pass = parts[1].Trim();
+                    string host = parts[2].Trim();
+                    return new ProxyInfo(host, port3, user, pass, detectedType);
                 }
             }
 

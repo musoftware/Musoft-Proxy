@@ -102,17 +102,6 @@ namespace ProxyForge.WinForms
             this.pnlTop.Controls.Add(this.lblRotateAfter);
             this.pnlTop.Controls.Add(this.numRotateAfter);
             this.pnlTop.Controls.Add(this.lblActiveStrategy);
-            this.pnlTop.Controls.Add(this.lblCurrentProxy);
-
-            // lblCurrentProxy
-            this.lblCurrentProxy.AutoSize = true;
-            this.lblCurrentProxy.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblCurrentProxy.ForeColor = System.Drawing.Color.DarkGreen;
-            this.lblCurrentProxy.Location = new System.Drawing.Point(730, 14);
-            this.lblCurrentProxy.Name = "lblCurrentProxy";
-            this.lblCurrentProxy.Size = new System.Drawing.Size(120, 15);
-            this.lblCurrentProxy.TabIndex = 8;
-            this.lblCurrentProxy.Text = "Current: None";
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Height = 45;
             this.pnlTop.Padding = new System.Windows.Forms.Padding(10, 10, 10, 5);
@@ -435,11 +424,23 @@ namespace ProxyForge.WinForms
             this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
 
             // pnlStatus
+            this.pnlStatus.Controls.Add(this.lblCurrentProxy);
             this.pnlStatus.Controls.Add(this.lblTestStatus);
             this.pnlStatus.Controls.Add(this.prgHealthCheck);
             this.pnlStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlStatus.Height = 28;
             this.pnlStatus.Padding = new System.Windows.Forms.Padding(10, 5, 10, 5);
+
+            // lblCurrentProxy
+            this.lblCurrentProxy.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblCurrentProxy.AutoSize = true;
+            this.lblCurrentProxy.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.lblCurrentProxy.ForeColor = System.Drawing.Color.DarkGreen;
+            this.lblCurrentProxy.Location = new System.Drawing.Point(350, 5);
+            this.lblCurrentProxy.Name = "lblCurrentProxy";
+            this.lblCurrentProxy.Size = new System.Drawing.Size(85, 15);
+            this.lblCurrentProxy.TabIndex = 2;
+            this.lblCurrentProxy.Text = "Current: None";
 
             // lblTestStatus
             this.lblTestStatus.AutoSize = true;

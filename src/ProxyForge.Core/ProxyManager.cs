@@ -5,15 +5,82 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace ProxyForge.Core
 {
     /// <summary>
-    /// High-level Proxy Manager wrapping <see cref="ProxyPool"/>, health checking, and request metrics.
+    /// High-level Proxy Manager wrapping <see cref="ProxyPool"/>, health checking, request metrics, and pluggable storage persistence.
     /// </summary>
     public class ProxyManager
     {
         private readonly object _lock = new object();
+
+        private static IProxyStorage _storageProvider = new InMemoryStorage();
+
+        /// <summary>
+        /// Gets the active global storage provider. Defaults to <see cref="InMemoryStorage"/>.
+        /// </summary>
+        public static IProxyStorage StorageProvider
+        {
+            get => _storageProvider ??= new InMemoryStorage();
+            private set => _storageProvider = value ?? new InMemoryStorage();
+        }
+
+        /// <summary>
+        /// Gets the global default <see cref="ProxyManager"/> singleton instance.
+        /// </summary>
+        public static ProxyManager Default { get; } = new ProxyManager();
+
+        /// <summary>
+        /// Occurs when the global storage provider configuration changes.
+        /// </summary>
+        public static event EventHandler? GlobalStorageChanged;
+
+        /// <summary>
+        /// Configures the global storage method for ProxyManager.
+        /// </summary>
+        /// <param name="method">Storage method enum (InMemory or JsonFile).</param>
+        /// <param name="jsonFilePath">Optional JSON file path when using JsonFile storage method.</param>
+        public static void SetStorageMethod(StorageMethod method, string? jsonFilePath = null)
+        {
+            switch (method)
+            {
+                case StorageMethod.InMemory:
+                    SetStorageMethod(new InMemoryStorage());
+                    break;
+                case StorageMethod.JsonFile:
+                    SetStorageMethod(new JsonFileStorage(jsonFilePath ?? "proxies.json"));
+                    break;
+                case StorageMethod.CustomApi:
+                    throw new ArgumentException("For CustomApi storage method, please provide an IProxyStorage implementation or custom load/save delegates.", nameof(method));
+            }
+        }
+
+        /// <summary>
+        /// Configures a custom global <see cref="IProxyStorage"/> provider.
+        /// </summary>
+        public static void SetStorageMethod(IProxyStorage storageProvider)
+        {
+            StorageProvider = storageProvider ?? new InMemoryStorage();
+            GlobalStorageChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Configures custom delegate load and save callbacks for CustomApi storage.
+        /// </summary>
+        public static void SetStorageMethod(Func<List<ProxyInfo>> loadFunc, Action<IEnumerable<ProxyInfo>> saveAction)
+        {
+            SetStorageMethod(new DelegateStorage(loadFunc, saveAction));
+        }
+
+        /// <summary>
+        /// Configures custom async delegate load and save callbacks for CustomApi storage.
+        /// </summary>
+        public static void SetStorageMethod(Func<Task<List<ProxyInfo>>> loadAsyncFunc, Func<IEnumerable<ProxyInfo>, Task> saveAsyncFunc)
+        {
+            SetStorageMethod(new DelegateStorage(loadAsyncFunc, saveAsyncFunc));
+        }
 
         /// <summary>
         /// Gets the underlying thread-safe <see cref="ProxyPool"/> engine.
@@ -57,12 +124,121 @@ namespace ProxyForge.Core
         /// <summary>
         /// Gets or sets maximum failure threshold before placing a proxy into cooldown.
         /// </summary>
-        public int MaxFailCount { get; set; } = 3;
+        public int MaxFailCount
+        {
+            get => Pool.MaxFailCount;
+            set => Pool.MaxFailCount = value;
+        }
+
+        /// <summary>
+        /// Gets or sets whether proxy operations automatically save changes to storage.
+        /// </summary>
+        public bool AutoSaveOnListChange { get; set; } = true;
+
+        private readonly IProxyStorage? _instanceStorage;
+
+        /// <summary>
+        /// Gets the active storage provider for this manager instance.
+        /// </summary>
+        public IProxyStorage ActiveStorage => _instanceStorage ?? StorageProvider;
 
         /// <summary>
         /// Occurs when the proxy list changes.
         /// </summary>
         public event EventHandler? ProxyListChanged;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProxyManager"/> with optional custom instance storage provider.
+        /// </summary>
+        /// <param name="storage">Optional custom storage provider for this instance.</param>
+        public ProxyManager(IProxyStorage? storage = null)
+        {
+            _instanceStorage = storage;
+            GlobalStorageChanged += (s, e) =>
+            {
+                if (_instanceStorage == null) LoadFromStorage();
+            };
+            LoadFromStorage();
+        }
+
+        /// <summary>
+        /// Loads proxies from the active storage provider into this manager's pool.
+        /// </summary>
+        public void LoadFromStorage()
+        {
+            lock (_lock)
+            {
+                var data = ActiveStorage.LoadData();
+                if (data != null)
+                {
+                    IsEnabled = data.IsEnabled;
+                    DefaultType = data.DefaultType;
+                    Rotation = data.RotationMode;
+                    Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
+                    Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
+                }
+            }
+            OnProxyListChanged();
+        }
+
+        /// <summary>
+        /// Asynchronously loads proxies from the active storage provider into this manager's pool.
+        /// </summary>
+        public async Task LoadFromStorageAsync()
+        {
+            var data = await ActiveStorage.LoadDataAsync().ConfigureAwait(false);
+            lock (_lock)
+            {
+                if (data != null)
+                {
+                    IsEnabled = data.IsEnabled;
+                    DefaultType = data.DefaultType;
+                    Rotation = data.RotationMode;
+                    Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
+                    Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
+                }
+            }
+            OnProxyListChanged();
+        }
+
+        /// <summary>
+        /// Persists the current proxy pool to the active storage provider.
+        /// </summary>
+        public void SaveToStorage()
+        {
+            lock (_lock)
+            {
+                var data = new ProxyStorageData
+                {
+                    IsEnabled = IsEnabled,
+                    DefaultType = DefaultType,
+                    RotationMode = Rotation,
+                    RotateAfter = Pool.RotateAfter,
+                    Proxies = Pool.Proxies.ToList()
+                };
+                ActiveStorage.SaveData(data);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously persists the current proxy pool to the active storage provider.
+        /// </summary>
+        public async Task SaveToStorageAsync()
+        {
+            ProxyStorageData data;
+            lock (_lock)
+            {
+                data = new ProxyStorageData
+                {
+                    IsEnabled = IsEnabled,
+                    DefaultType = DefaultType,
+                    RotationMode = Rotation,
+                    RotateAfter = Pool.RotateAfter,
+                    Proxies = Pool.Proxies.ToList()
+                };
+            }
+            await ActiveStorage.SaveDataAsync(data).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Adds a single proxy to the manager.
@@ -74,6 +250,7 @@ namespace ProxyForge.Core
             {
                 Pool.Proxies.Add(proxy);
             }
+            if (AutoSaveOnListChange) SaveToStorage();
             OnProxyListChanged();
         }
 
@@ -87,6 +264,7 @@ namespace ProxyForge.Core
             {
                 Pool.Proxies.AddRange(proxies);
             }
+            if (AutoSaveOnListChange) SaveToStorage();
             OnProxyListChanged();
         }
 
@@ -100,6 +278,7 @@ namespace ProxyForge.Core
             {
                 Pool.Proxies.Remove(proxy);
             }
+            if (AutoSaveOnListChange) SaveToStorage();
             OnProxyListChanged();
         }
 
@@ -112,6 +291,7 @@ namespace ProxyForge.Core
             {
                 Pool.Proxies.Clear();
             }
+            if (AutoSaveOnListChange) SaveToStorage();
             OnProxyListChanged();
         }
 
@@ -145,68 +325,55 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
-        /// Creates an <see cref="HttpClientHandler"/> configured with the rotated or specified proxy.
+        /// Creates an <see cref="IWebProxy"/> instance linked to this ProxyManager for dynamic request rotation.
+        /// </summary>
+        public IWebProxy CreateWebProxy()
+        {
+            return new DynamicWebProxy(this);
+        }
+
+        /// <summary>
+        /// Creates an <see cref="HttpClientHandler"/> configured with dynamic proxy rotation.
         /// </summary>
         public HttpClientHandler CreateHandler(ProxyInfo? proxy = null, string? sessionKey = null)
         {
-            ProxyInfo? targetProxy = proxy ?? GetNext(sessionKey);
+            if (!IsEnabled)
+            {
+                return new HttpClientHandler();
+            }
+
+            if (proxy != null)
+            {
+                return proxy.CreateHandler();
+            }
+
             var handler = new HttpClientHandler();
-
-            if (targetProxy == null || !IsEnabled)
-            {
-                return handler;
-            }
-
-            if (targetProxy.Type == ProxyType.SOCKS5)
-            {
-                var socksProxy = new MihaZupan.HttpToSocks5Proxy(
-                    targetProxy.Host,
-                    targetProxy.Port,
-                    string.IsNullOrEmpty(targetProxy.Username) ? null : targetProxy.Username,
-                    string.IsNullOrEmpty(targetProxy.Password) ? null : targetProxy.Password
-                );
-                handler.Proxy = socksProxy;
-            }
-            else
-            {
-                var webProxy = new WebProxy(targetProxy.Host, targetProxy.Port);
-                if (!string.IsNullOrEmpty(targetProxy.Username))
-                {
-                    webProxy.Credentials = new NetworkCredential(targetProxy.Username, targetProxy.Password);
-                }
-                handler.Proxy = webProxy;
-            }
-
+            handler.Proxy = CreateWebProxy();
             return handler;
         }
 
         /// <summary>
-        /// Saves proxy list to JSON file.
+        /// Saves proxy list to specific JSON file path.
         /// </summary>
         public void Save(string path)
         {
+            var jsonStorage = new JsonFileStorage(path);
             lock (_lock)
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(Pool.Proxies, options);
-                File.WriteAllText(path, json);
+                jsonStorage.Save(Pool.Proxies);
             }
         }
 
         /// <summary>
-        /// Loads proxy list from JSON file.
+        /// Loads proxy list from specific JSON file path.
         /// </summary>
         public void Load(string path)
         {
-            if (!File.Exists(path)) return;
+            var jsonStorage = new JsonFileStorage(path);
+            var loaded = jsonStorage.Load();
             lock (_lock)
             {
-                string json = File.ReadAllText(path);
-                var loaded = JsonSerializer.Deserialize<List<ProxyInfo>>(json);
-                if (loaded != null)
-                {
-                    Pool.Proxies = loaded;
-                }
+                Pool.Proxies = loaded;
             }
             OnProxyListChanged();
         }
@@ -220,3 +387,4 @@ namespace ProxyForge.Core
         }
     }
 }
+
