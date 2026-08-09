@@ -2,7 +2,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SmartProxyManager.Core;
+using ProxyForge.Core;
 
 namespace DemoApp
 {

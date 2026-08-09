@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SmartProxyManager.WinForms\SmartProxyManager.WinForms.csproj" />
-    <ProjectReference Include="..\..\src\SmartProxyManager.Core\SmartProxyManager.Core.csproj" />
+    <ProjectReference Include="..\..\src\ProxyForge.WinForms\ProxyForge.WinForms.csproj" />
+    <ProjectReference Include="..\..\src\ProxyForge.Core\ProxyForge.Core.csproj" />
   </ItemGroup>
 
 </Project>

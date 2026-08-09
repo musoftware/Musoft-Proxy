@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;net6.0-windows;net8.0-windows</TargetFrameworks>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- Package Metadata -->
+    <Title>ProxyForge.WinForms</Title>
+    <PackageId>ProxyForge.WinForms</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Musoftware</Authors>
+    <Company>Musoftware</Company>
+    <Description>The most complete WinForms proxy manager control for ProxyForge. Supports HTTP, SOCKS5, bulk import, auto-checker, rotation, and latency test. Drop-in UserControl.</Description>
+    <PackageTags>winforms;proxy;http-proxy;socks5;proxy-manager;csharp;proxy-checker;proxy-rotator</PackageTags>
+    <RepositoryUrl>https://github.com/musoftware/ProxyForge</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProxyForge.Core\ProxyForge.Core.csproj" />
+  </ItemGroup>
+
+</Project>

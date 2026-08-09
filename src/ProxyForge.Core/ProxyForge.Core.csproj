@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- Package Metadata -->
+    <Title>ProxyForge.Core</Title>
+    <PackageId>ProxyForge.Core</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Musoftware</Authors>
+    <Company>Musoftware</Company>
+    <Description>The core engine for ProxyForge - The Ultimate Proxy Manager for .NET. Supports HTTP and SOCKS5 proxies, intelligent multi-format parsing, thread-safe rotation, parallel testing, ban detection, scraping, and HttpClientHandler creation.</Description>
+    <PackageTags>proxy;socks5;http-proxy;proxy-rotator;proxy-parser;scraper;dotnet;csharp</PackageTags>
+    <RepositoryUrl>https://github.com/musoftware/ProxyForge</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.72" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>

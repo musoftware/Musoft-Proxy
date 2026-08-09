@@ -1,6 +1,6 @@
-# SmartProxyManager.WinForms 🚀
+# ProxyForge.WinForms 🚀
 
-[![NuGet Version](https://img.shields.io/nuget/v/SmartProxyManager.WinForms.svg?style=flat-square&color=blue)](https://www.nuget.org/packages/SmartProxyManager.WinForms)
+[![NuGet Version](https://img.shields.io/nuget/v/ProxyForge.WinForms.svg?style=flat-square&color=blue)](https://www.nuget.org/packages/ProxyForge.WinForms)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![.NET Supported](https://img.shields.io/badge/.NET-4.6.2%20%7C%206.0--windows%20%7C%208.0--windows-purple.svg?style=flat-square)](https://dotnet.microsoft.com/)
 
@@ -11,7 +11,7 @@ Supports **HTTP**, **SOCKS5**, intelligent bulk import, parallel auto-checker, t
 
 ## 🌟 Demo Preview
 
-![SmartProxyManager Control Preview](https://raw.githubusercontent.com/Musoftware/SmartProxyManager/main/assets/demo_preview.gif)
+![ProxyForge Control Preview](https://raw.githubusercontent.com/Musoftware/ProxyForge/main/assets/demo_preview.gif)
 
 *(Placeholder: Drop the `ProxyManagerControl` into your Visual Studio toolbox or form layout)*
 
@@ -34,13 +34,13 @@ Supports **HTTP**, **SOCKS5**, intelligent bulk import, parallel auto-checker, t
 Install via NuGet Package Manager Console or dotnet CLI:
 
 ```bash
-dotnet add package SmartProxyManager.WinForms
+dotnet add package ProxyForge.WinForms
 ```
 
 Or via Package Manager Console in Visual Studio:
 
 ```powershell
-Install-Package SmartProxyManager.WinForms
+Install-Package ProxyForge.WinForms
 ```
 
 ---
@@ -52,7 +52,7 @@ Install-Package SmartProxyManager.WinForms
 Drag `ProxyManagerControl` onto your Form in Visual Studio or initialize programmatically:
 
 ```csharp
-using SmartProxyManager.WinForms;
+using ProxyForge.WinForms;
 
 public partial class MainForm : Form
 {
@@ -73,7 +73,7 @@ Generate a pre-configured `HttpClientHandler` instantly from your `ProxyManager`
 
 ```csharp
 using System.Net.Http;
-using SmartProxyManager.Core;
+using ProxyForge.Core;
 
 // Retrieve the next rotated proxy automatically
 var handler = proxyManagerControl.Manager.CreateHandler();
@@ -89,7 +89,7 @@ Console.WriteLine($"Outbound IP: {result}");
 Parse any input string format without worrying about formatting rules:
 
 ```csharp
-using SmartProxyManager.Core;
+using ProxyForge.Core;
 
 string rawInput = @"
     # Bulk Proxies List
@@ -107,7 +107,7 @@ proxyControl.Manager.AddRange(proxies);
 ### 4. Asynchronous Testing & Latency Measurement
 
 ```csharp
-using SmartProxyManager.Core;
+using ProxyForge.Core;
 
 // Test all proxies in parallel with progress callback
 var progress = new Progress<ProxyInfo>(p => 
@@ -138,8 +138,8 @@ using (var form = new ProxyManagerForm())
 ## 🛠️ Solution Architecture
 
 ```
-/src/SmartProxyManager.Core/       # Core Engine (Parsing, Rotation, Testing, Handlers)
-/src/SmartProxyManager.WinForms/   # WinForms Control Library (UserControl & Form UI)
+/src/ProxyForge.Core/       # Core Engine (Parsing, Rotation, Testing, Handlers)
+/src/ProxyForge.WinForms/   # WinForms Control Library (UserControl & Form UI)
 /demo/DemoApp/                      # Executable WinForms Demo Application
 ```
 
@@ -151,4 +151,4 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
-⭐ **If you find SmartProxyManager useful, please consider giving this repository a star on GitHub!**
+⭐ **If you find ProxyForge useful, please consider giving this repository a star on GitHub!**

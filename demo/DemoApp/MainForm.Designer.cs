@@ -21,7 +21,7 @@ namespace DemoApp
             this.lblDemoTitle = new System.Windows.Forms.Label();
             this.btnTestHttpClient = new System.Windows.Forms.Button();
             this.txtOutput = new System.Windows.Forms.TextBox();
-            this.proxyControl = new SmartProxyManager.WinForms.ProxyManagerControl();
+            this.proxyControl = new ProxyForge.WinForms.ProxyManagerControl();
 
             this.pnlTopBar.SuspendLayout();
             this.SuspendLayout();
@@ -41,7 +41,7 @@ namespace DemoApp
             this.lblDemoTitle.Name = "lblDemoTitle";
             this.lblDemoTitle.Size = new System.Drawing.Size(202, 20);
             this.lblDemoTitle.TabIndex = 0;
-            this.lblDemoTitle.Text = "SmartProxyManager Demo";
+            this.lblDemoTitle.Text = "ProxyForge Demo";
 
             // btnTestHttpClient
             this.btnTestHttpClient.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
@@ -76,7 +76,7 @@ namespace DemoApp
             this.Controls.Add(this.pnlTopBar);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "SmartProxyManager.WinForms Demo Application";
+            this.Text = "ProxyForge.WinForms Demo Application";
             this.pnlTopBar.ResumeLayout(false);
             this.pnlTopBar.PerformLayout();
             this.ResumeLayout(false);
@@ -88,6 +88,6 @@ namespace DemoApp
         private System.Windows.Forms.Label lblDemoTitle;
         private System.Windows.Forms.Button btnTestHttpClient;
         private System.Windows.Forms.TextBox txtOutput;
-        private SmartProxyManager.WinForms.ProxyManagerControl proxyControl;
+        private ProxyForge.WinForms.ProxyManagerControl proxyControl;
     }
 }

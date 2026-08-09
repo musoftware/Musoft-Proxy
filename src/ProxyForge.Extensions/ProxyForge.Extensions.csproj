@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net462;netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- Package Metadata -->
+    <Title>ProxyForge.Extensions</Title>
+    <PackageId>ProxyForge.Extensions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Musoftware</Authors>
+    <Company>Musoftware</Company>
+    <Description>Extensions for ProxyForge and ProxyForge including Selenium ChromeOptions integration and HttpClient rotating proxy helpers.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProxyForge.Core\ProxyForge.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Selenium.WebDriver" Version="4.25.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>
