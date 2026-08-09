@@ -555,7 +555,7 @@ namespace ProxyForge.WinForms
 
             _isTesting = true;
             btnDiscoverSources.Enabled = false;
-            lblTestStatus.Text = "🔍 Discovering new proxy list sources...";
+            lblTestStatus.Text = "🔍 Discovering new proxy sources & harvesting proxies...";
             lblTestStatus.ForeColor = Color.Blue;
 
             try
@@ -563,14 +563,22 @@ namespace ProxyForge.WinForms
                 var scraper = new FreeProxyScraper();
                 int added = await scraper.DiscoverAndAddNewSourcesAsync();
                 int totalSources = scraper.GetAllSources().Count;
-                if (added > 0)
+
+                var harvested = await scraper.FetchAsync();
+                if (harvested.Count > 0)
                 {
-                    lblTestStatus.Text = $"Discovered and added {added} new proxy list sources! ({totalSources} total active)";
+                    Manager.AddRange(harvested);
+                    lblTestStatus.Text = $"Discovered {added} new sources ({totalSources} total) & harvested {harvested.Count} free proxies!";
                     lblTestStatus.ForeColor = Color.DarkGreen;
+                }
+                else if (added > 0)
+                {
+                    lblTestStatus.Text = $"Discovered {added} new sources ({totalSources} total), but no proxies were found.";
+                    lblTestStatus.ForeColor = Color.Orange;
                 }
                 else
                 {
-                    lblTestStatus.Text = $"All available proxy list sources ({totalSources} sources) are already active.";
+                    lblTestStatus.Text = $"All {totalSources} sources active, no new proxies harvested.";
                     lblTestStatus.ForeColor = Color.DarkGreen;
                 }
             }
@@ -582,6 +590,7 @@ namespace ProxyForge.WinForms
             {
                 _isTesting = false;
                 btnDiscoverSources.Enabled = true;
+                UpdateStatusLabel();
             }
         }
 
