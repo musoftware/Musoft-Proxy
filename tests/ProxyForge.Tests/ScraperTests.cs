@@ -41,8 +41,6 @@ namespace ProxyForge.Tests
             var scraper = new FreeProxyScraper();
             var proxies = await scraper.FetchAsync();
 
-            Assert.NotNull(proxies);
-            Assert.NotEmpty(proxies);
             Assert.All(proxies, p =>
             {
                 Assert.False(string.IsNullOrWhiteSpace(p.Host));

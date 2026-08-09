@@ -404,13 +404,21 @@ namespace ProxyForge.WinForms
         {
             if (_isTesting) return;
 
-            var targetList = lstProxies.SelectedItems.Count > 0
-                ? lstProxies.SelectedItems.Cast<ListViewItem>().Select(i => i.Tag as ProxyInfo).Where(p => p != null).Select(p => p!).ToList()
-                : Manager.Proxies.ToList();
+            if (lstProxies.SelectedItems.Count == 0)
+            {
+                OnValidationError("Please select at least one proxy from the list to test.");
+                return;
+            }
+
+            var targetList = lstProxies.SelectedItems.Cast<ListViewItem>()
+                .Select(i => i.Tag as ProxyInfo)
+                .Where(p => p != null)
+                .Select(p => p!)
+                .ToList();
 
             if (targetList.Count == 0)
             {
-                OnValidationError("No proxies available to test.");
+                OnValidationError("No valid selected proxies available to test.");
                 return;
             }
 
@@ -443,7 +451,7 @@ namespace ProxyForge.WinForms
 
             try
             {
-                await healthChecker.CheckAllAsync(targetList, maxParallel: 20, progress: progress);
+                await healthChecker.CheckAllAsync(targetList, maxParallel: 100, progress: progress);
             }
             finally
             {
@@ -500,7 +508,7 @@ namespace ProxyForge.WinForms
 
             try
             {
-                await healthChecker.CheckAllAsync(targetList, maxParallel: 20, progress: progress);
+                await healthChecker.CheckAllAsync(targetList, maxParallel: 100, progress: progress);
             }
             finally
             {
@@ -519,43 +527,7 @@ namespace ProxyForge.WinForms
 
             _isTesting = true;
             btnScrapeFree.Enabled = false;
-            lblTestStatus.Text = "⚡ Harvesting free proxies from public sources...";
-            lblTestStatus.ForeColor = Color.Blue;
-
-            try
-            {
-                var scraper = new FreeProxyScraper();
-                var harvested = await scraper.FetchAsync();
-                if (harvested.Count > 0)
-                {
-                    Manager.AddRange(harvested);
-                    lblTestStatus.Text = $"Successfully harvested {harvested.Count} free proxies!";
-                    lblTestStatus.ForeColor = Color.DarkGreen;
-                }
-                else
-                {
-                    OnValidationError("No free proxies were found from active sources.");
-                }
-            }
-            catch (Exception ex)
-            {
-                OnValidationError($"Scraping failed: {ex.Message}");
-            }
-            finally
-            {
-                _isTesting = false;
-                btnScrapeFree.Enabled = true;
-                UpdateStatusLabel();
-            }
-        }
-
-        private async void btnDiscoverSources_Click(object sender, EventArgs e)
-        {
-            if (_isTesting) return;
-
-            _isTesting = true;
-            btnDiscoverSources.Enabled = false;
-            lblTestStatus.Text = "🔍 Discovering new proxy sources & harvesting proxies...";
+            lblTestStatus.Text = "⚡ Discovering & harvesting free proxies...";
             lblTestStatus.ForeColor = Color.Blue;
 
             try
@@ -584,14 +556,19 @@ namespace ProxyForge.WinForms
             }
             catch (Exception ex)
             {
-                OnValidationError($"Source discovery failed: {ex.Message}");
+                OnValidationError($"Scraping failed: {ex.Message}");
             }
             finally
             {
                 _isTesting = false;
-                btnDiscoverSources.Enabled = true;
+                btnScrapeFree.Enabled = true;
                 UpdateStatusLabel();
             }
+        }
+
+        private void btnDiscoverSources_Click(object sender, EventArgs e)
+        {
+            btnScrapeFree_Click(sender, e);
         }
 
         private async void btnJudge_Click(object sender, EventArgs e)

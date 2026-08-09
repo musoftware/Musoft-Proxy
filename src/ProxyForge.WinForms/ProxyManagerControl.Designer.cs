@@ -238,7 +238,6 @@ namespace ProxyForge.WinForms
             this.pnlActions.Controls.Add(this.btnPaste);
             this.pnlActions.Controls.Add(this.btnImport);
             this.pnlActions.Controls.Add(this.btnScrapeFree);
-            this.pnlActions.Controls.Add(this.btnDiscoverSources);
             this.pnlActions.Controls.Add(this.btnJudge);
             this.pnlActions.Controls.Add(this.btnTest);
             this.pnlActions.Controls.Add(this.btnTestAll);

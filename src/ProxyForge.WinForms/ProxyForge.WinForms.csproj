@@ -11,7 +11,7 @@
     <!-- Package Metadata -->
     <Title>Musoft.Proxy.WinForms</Title>
     <PackageId>Musoft.Proxy.WinForms</PackageId>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <Authors>musoftware</Authors>
     <Company>Musoftware</Company>
     <Description>The most complete WinForms proxy manager control for ProxyForge / Musoft.Proxy. Supports HTTP, SOCKS5, bulk import, auto-checker, rotation, and latency test. Drop-in UserControl.</Description>
