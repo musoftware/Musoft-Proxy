@@ -2,23 +2,48 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 
 namespace ProxyForge.Core
 {
     /// <summary>
-    /// Discovers dynamic raw proxy list endpoints by scraping DuckDuckGo HTML search results.
+    /// Discovers dynamic raw proxy list endpoints by querying search engines, GitHub APIs, and curated repository patterns.
     /// </summary>
     public class DynamicSourceDiscoverer
     {
         private static readonly HttpClient SharedClient = CreateHttpClient();
 
-        private static readonly string[] SearchQueries = new[]
+        private static readonly string[] CuratedFallbackSources = new[]
         {
-            "free proxy list raw github",
-            "proxyscrape api free proxies",
-            "free proxy txt list 2024"
+            "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+            "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt",
+            "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt",
+            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
+            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks4.txt",
+            "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt",
+            "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+            "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-socks5.txt",
+            "https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt",
+            "https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS5_RAW.txt",
+            "https://raw.githubusercontent.com/rdavydov/proxy-list/main/http.txt",
+            "https://raw.githubusercontent.com/rdavydov/proxy-list/main/socks5.txt",
+            "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/http.txt",
+            "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/socks5.txt",
+            "https://raw.githubusercontent.com/zloi-user/hideip.me/main/http.txt",
+            "https://raw.githubusercontent.com/zloi-user/hideip.me/main/socks5.txt",
+            "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+            "https://raw.githubusercontent.com/Sunny9935/proxy-list/master/proxy.txt",
+            "https://raw.githubusercontent.com/prxchk/proxy-list/main/http.txt",
+            "https://raw.githubusercontent.com/prxchk/proxy-list/main/socks5.txt",
+            "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all",
+            "https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks5&timeout=10000&country=all",
+            "https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks4&timeout=10000&country=all",
+            "https://openproxylist.xyz/http.txt",
+            "https://openproxylist.xyz/socks5.txt"
         };
 
         private static HttpClient CreateHttpClient()
@@ -30,57 +55,150 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
-        /// Discovers public proxy list URLs using DuckDuckGo search queries.
+        /// Discovers public proxy list URLs using DuckDuckGo search, GitHub API, and curated repository patterns.
         /// </summary>
-        /// <param name="maxResults">Maximum candidate URLs to return (default 10).</param>
+        /// <param name="maxResults">Maximum candidate URLs to return (default 30).</param>
         /// <returns>A list of discovered proxy list URLs.</returns>
-        public async Task<List<string>> DiscoverProxyListUrlsAsync(int maxResults = 10)
+        public async Task<List<string>> DiscoverProxyListUrlsAsync(int maxResults = 30)
         {
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var query in SearchQueries)
+            // 1. Discover via GitHub API search
+            try
             {
-                if (candidates.Count >= maxResults) break;
+                await DiscoverFromGitHubApiAsync(candidates, maxResults).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GitHub API discovery error: {ex.Message}");
+            }
 
+            // 2. Discover via DuckDuckGo search engine
+            if (candidates.Count < maxResults)
+            {
                 try
                 {
-                    string searchUrl = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}";
-                    string html = await SharedClient.GetStringAsync(searchUrl).ConfigureAwait(false);
-
-                    if (!string.IsNullOrWhiteSpace(html))
-                    {
-                        var doc = new HtmlDocument();
-                        doc.LoadHtml(html);
-
-                        var nodes = doc.DocumentNode.SelectNodes("//a[contains(@class, 'result__url')]")
-                                ?? doc.DocumentNode.SelectNodes("//a[contains(@class, 'result__a')]");
-
-                        if (nodes != null)
-                        {
-                            foreach (var node in nodes)
-                            {
-                                string targetUrl = ExtractTargetUrl(node);
-                                if (!string.IsNullOrEmpty(targetUrl) && IsCandidateProxyListUrl(targetUrl))
-                                {
-                                    candidates.Add(targetUrl);
-                                    if (candidates.Count >= maxResults) break;
-                                }
-                            }
-                        }
-                    }
+                    await DiscoverFromDuckDuckGoAsync(candidates, maxResults).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"DynamicSourceDiscoverer query error: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"DuckDuckGo discovery error: {ex.Message}");
                 }
+            }
+
+            // 3. Fallback to curated pool of active proxy list endpoints
+            foreach (var url in CuratedFallbackSources)
+            {
+                if (candidates.Count >= maxResults) break;
+                candidates.Add(url);
             }
 
             return candidates.Take(maxResults).ToList();
         }
 
-        /// <summary>
-        /// Extracts and decodes actual target URL from DuckDuckGo redirect link node.
-        /// </summary>
+        private async Task DiscoverFromGitHubApiAsync(HashSet<string> candidates, int maxResults)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/search/repositories?q=proxy+list&sort=updated&per_page=10");
+            req.Headers.UserAgent.ParseAdd("ProxyForge/1.0");
+
+            using var resp = await SharedClient.SendAsync(req).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return;
+
+            string json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in items.EnumerateArray())
+                {
+                    if (candidates.Count >= maxResults) break;
+
+                    if (item.TryGetProperty("full_name", out var fullNameProp))
+                    {
+                        string fullName = fullNameProp.GetString() ?? "";
+                        if (!string.IsNullOrEmpty(fullName))
+                        {
+                            AddGitHubRawCandidates(fullName, candidates, maxResults);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task DiscoverFromDuckDuckGoAsync(HashSet<string> candidates, int maxResults)
+        {
+            string[] searchQueries = new[]
+            {
+                "free proxy list raw github",
+                "proxyscrape api free proxies",
+                "free proxy list github http socks5"
+            };
+
+            foreach (var query in searchQueries)
+            {
+                if (candidates.Count >= maxResults) break;
+
+                string searchUrl = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(query)}";
+                using var req = new HttpRequestMessage(HttpMethod.Get, searchUrl);
+                using var resp = await SharedClient.SendAsync(req).ConfigureAwait(false);
+                if (!resp.IsSuccessStatusCode) continue;
+
+                string html = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(html)) continue;
+
+                var doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                var nodes = doc.DocumentNode.SelectNodes("//a[@href]");
+                if (nodes == null) continue;
+
+                foreach (var node in nodes)
+                {
+                    if (candidates.Count >= maxResults) break;
+
+                    string targetUrl = ExtractTargetUrl(node);
+                    if (string.IsNullOrEmpty(targetUrl)) continue;
+
+                    if (IsCandidateProxyListUrl(targetUrl))
+                    {
+                        candidates.Add(targetUrl);
+                    }
+                    else if (targetUrl.Contains("github.com/"))
+                    {
+                        var match = Regex.Match(targetUrl, @"github\.com/([^/]+)/([^/]+)", RegexOptions.IgnoreCase);
+                        if (match.Success)
+                        {
+                            string owner = match.Groups[1].Value;
+                            string repo = match.Groups[2].Value.Replace(".git", "");
+                            AddGitHubRawCandidates($"{owner}/{repo}", candidates, maxResults);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void AddGitHubRawCandidates(string repoFullName, HashSet<string> candidates, int maxResults)
+        {
+            string[] paths = new[]
+            {
+                "main/proxies/http.txt",
+                "main/proxies/socks5.txt",
+                "main/http.txt",
+                "main/socks5.txt",
+                "main/proxy.txt",
+                "master/http.txt",
+                "master/socks5.txt",
+                "master/proxy-list-raw.txt",
+                "master/proxy.txt"
+            };
+
+            foreach (var p in paths)
+            {
+                if (candidates.Count >= maxResults) break;
+                candidates.Add($"https://raw.githubusercontent.com/{repoFullName}/{p}");
+            }
+        }
+
         private string ExtractTargetUrl(HtmlNode node)
         {
             if (node == null) return string.Empty;
@@ -111,21 +229,17 @@ namespace ProxyForge.Core
             return string.Empty;
         }
 
-        /// <summary>
-        /// Determines whether a candidate URL matches common proxy list provider patterns.
-        /// </summary>
         private bool IsCandidateProxyListUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return false;
 
             string lower = url.ToLowerInvariant();
 
-            bool isGithubTxt = lower.Contains("githubusercontent.com") && lower.EndsWith(".txt");
+            bool isGithubRaw = lower.Contains("raw.githubusercontent.com");
             bool isProxyscrape = lower.Contains("proxyscrape.com");
-            bool isProxyListTxt = lower.Contains("proxy-list") && lower.EndsWith(".txt");
-            bool isRawProxy = lower.Contains("raw") && lower.Contains("proxy");
+            bool isProxyListTxt = lower.Contains("proxy") && (lower.EndsWith(".txt") || lower.Contains("raw"));
 
-            return isGithubTxt || isProxyscrape || isProxyListTxt || isRawProxy;
+            return isGithubRaw || isProxyscrape || isProxyListTxt;
         }
 
         /// <summary>

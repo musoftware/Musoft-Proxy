@@ -555,15 +555,24 @@ namespace ProxyForge.WinForms
 
             _isTesting = true;
             btnDiscoverSources.Enabled = false;
-            lblTestStatus.Text = "🔍 Discovering new proxy list sources from DuckDuckGo...";
+            lblTestStatus.Text = "🔍 Discovering new proxy list sources...";
             lblTestStatus.ForeColor = Color.Blue;
 
             try
             {
                 var scraper = new FreeProxyScraper();
                 int added = await scraper.DiscoverAndAddNewSourcesAsync();
-                lblTestStatus.Text = $"Discovered and added {added} new proxy list sources!";
-                lblTestStatus.ForeColor = Color.DarkGreen;
+                int totalSources = scraper.GetAllSources().Count;
+                if (added > 0)
+                {
+                    lblTestStatus.Text = $"Discovered and added {added} new proxy list sources! ({totalSources} total active)";
+                    lblTestStatus.ForeColor = Color.DarkGreen;
+                }
+                else
+                {
+                    lblTestStatus.Text = $"All available proxy list sources ({totalSources} sources) are already active.";
+                    lblTestStatus.ForeColor = Color.DarkGreen;
+                }
             }
             catch (Exception ex)
             {

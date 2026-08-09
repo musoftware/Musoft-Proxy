@@ -323,11 +323,11 @@ namespace ProxyForge.Core
                 if (!resp.IsSuccessStatusCode) return false;
 
                 using var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                byte[] buffer = new byte[2048];
+                byte[] buffer = new byte[4096];
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                 string sample = System.Text.Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                return Regex.IsMatch(sample, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{2,5}");
+                return ProxyParser.Parse(sample).Count > 0 || Regex.IsMatch(sample, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}[:\s]\d{2,5}");
             }
             catch
             {

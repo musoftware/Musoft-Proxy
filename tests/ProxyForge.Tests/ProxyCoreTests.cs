@@ -8,6 +8,7 @@ using Xunit;
 
 namespace ProxyForge.Tests
 {
+    [Collection("StorageTests")]
     public class ProxyCoreTests
     {
         [Fact]
