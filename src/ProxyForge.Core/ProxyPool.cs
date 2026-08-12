@@ -144,9 +144,7 @@ namespace ProxyForge.Core
 
             lock (_lock)
             {
-                var poolList = AllowDirectFallback
-                    ? Proxies
-                    : Proxies.Where(p => !p.IsDirect).ToList();
+                var poolList = Proxies.Where(p => !p.IsDirect).ToList();
 
                 // Priority 1: Confirmed working proxies (IsLive == true, non-banned, not in cooldown)
                 var available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
@@ -157,13 +155,8 @@ namespace ProxyForge.Core
                     available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
                 }
 
-                // Priority 3: Final fallback to non-banned proxies not in cooldown
-                if (available.Count == 0)
-                {
-                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown).ToList();
-                }
-
-                if (AllowDirectFallback && !available.Any(p => p.IsDirect))
+                // Priority 3: Fallback to Direct ONLY if no proxies are available in pool and Direct is not in cooldown
+                if (available.Count == 0 && AllowDirectFallback && !ProxyInfo.Direct.IsInCooldown)
                 {
                     available.Add(ProxyInfo.Direct);
                 }
@@ -276,18 +269,15 @@ namespace ProxyForge.Core
 
             lock (_lock)
             {
-                var poolList = AllowDirectFallback
-                    ? Proxies
-                    : Proxies.Where(p => !p.IsDirect).ToList();
+                var poolList = Proxies.Where(p => !p.IsDirect).ToList();
 
-                var available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
-                if (available.Count == 0)
+                // Include all valid candidate proxies for rotation (IsLive != false, non-banned, not in cooldown)
+                var available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive != false).ToList();
+
+                // Fallback to Direct ONLY if no proxies are available in pool and Direct is not in cooldown
+                if (available.Count == 0 && AllowDirectFallback && !ProxyInfo.Direct.IsInCooldown)
                 {
-                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
-                }
-                if (available.Count == 0)
-                {
-                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown).ToList();
+                    available.Add(ProxyInfo.Direct);
                 }
 
                 if (available.Count > 0)
@@ -381,6 +371,10 @@ namespace ProxyForge.Core
                 if (MaxSuccessfulRequestsPerProxy > 0 && proxy.SuccessfulRequestsCount >= MaxSuccessfulRequestsPerProxy)
                 {
                     proxy.SuccessfulRequestsCount = 0;
+                    if (proxy.IsDirect)
+                    {
+                        proxy.CooldownUntil = DateTime.UtcNow.Add(CooldownDuration);
+                    }
                     RotateToNext();
                 }
             }

@@ -83,10 +83,13 @@ namespace ProxyForge.Core
 
             // Step 2: Test HTTP endpoint
             var urlsToTry = new List<string> { testUrl };
-            foreach (var fastUrl in FastTestUrls)
+            if (string.Equals(testUrl, DefaultTestUrl, StringComparison.OrdinalIgnoreCase))
             {
-                if (!urlsToTry.Contains(fastUrl, StringComparer.OrdinalIgnoreCase))
-                    urlsToTry.Add(fastUrl);
+                foreach (var fastUrl in FastTestUrls)
+                {
+                    if (!urlsToTry.Contains(fastUrl, StringComparer.OrdinalIgnoreCase))
+                        urlsToTry.Add(fastUrl);
+                }
             }
 
             var sw = Stopwatch.StartNew();

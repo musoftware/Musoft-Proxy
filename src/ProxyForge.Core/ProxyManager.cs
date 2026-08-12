@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ProxyForge.Core
@@ -147,6 +148,16 @@ namespace ProxyForge.Core
             get => Pool.RotateOnFailure;
             set => Pool.RotateOnFailure = value;
         }
+
+        /// <summary>
+        /// Gets or sets a target test URL endpoint used to validate proxies for a specific application domain.
+        /// </summary>
+        public string TargetTestUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets a custom asynchronous validator delegate hook function to test candidate proxies.
+        /// </summary>
+        public Func<ProxyInfo, CancellationToken, Task<bool>>? CustomValidator { get; set; }
 
         /// <summary>
         /// Gets or sets whether automatic background proxy fetching is enabled.

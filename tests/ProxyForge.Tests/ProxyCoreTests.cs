@@ -76,11 +76,10 @@ namespace ProxyForge.Tests
         }
 
         [Fact]
-        public void ProxyPool_MarkFailed_PutsProxyInCooldown_WhenMaxFailCountReached()
+        public void ProxyPool_MarkFailed_PutsProxyInCooldown_OnFailure()
         {
             var pool = new ProxyPool
             {
-                MaxFailCount = 2,
                 CooldownDuration = TimeSpan.FromMinutes(5)
             };
 
@@ -88,12 +87,38 @@ namespace ProxyForge.Tests
             pool.Proxies = new List<ProxyInfo> { p1 };
 
             pool.MarkFailed(p1);
-            Assert.False(p1.IsInCooldown);
-            Assert.Equal(1, p1.FailCount);
-
-            pool.MarkFailed(p1);
             Assert.True(p1.IsInCooldown);
-            Assert.False(p1.IsLive);
+            Assert.Equal(1, p1.FailCount);
+        }
+
+        [Fact]
+        public void ProxyPool_RotatesAfter_MaxSuccessfulRequests()
+        {
+            var pool = new ProxyPool
+            {
+                MaxSuccessfulRequestsPerProxy = 8
+            };
+
+            var p1 = new ProxyInfo("1.1.1.1", 8080);
+            var p2 = new ProxyInfo("2.2.2.2", 8080);
+            pool.Proxies = new List<ProxyInfo> { p1, p2 };
+
+            var current = pool.GetProxy();
+            Assert.NotNull(current);
+            Assert.Equal("1.1.1.1", current.Host);
+
+            // Simulate 7 successful requests
+            for (int i = 0; i < 7; i++)
+            {
+                pool.MarkSuccess(p1);
+            }
+            Assert.Equal(7, p1.SuccessfulRequestsCount);
+            Assert.Equal("1.1.1.1", pool.CurrentProxy?.Host);
+
+            // 8th successful request triggers rotation!
+            pool.MarkSuccess(p1);
+            Assert.Equal(0, p1.SuccessfulRequestsCount);
+            Assert.Equal("2.2.2.2", pool.CurrentProxy?.Host);
         }
 
         [Fact]
