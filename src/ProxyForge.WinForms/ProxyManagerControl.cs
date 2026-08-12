@@ -82,6 +82,11 @@ namespace ProxyForge.WinForms
 
             numRotateAfter.Value = Manager.Pool.RotateAfter;
             chkEnableProxy.Checked = Manager.IsEnabled;
+            chkAutoFetchProxy.Checked = Manager.EnableAutoFetch;
+            int maxSuccess = Manager.MaxSuccessfulRequestsPerProxy > 0 ? Manager.MaxSuccessfulRequestsPerProxy : 8;
+            if (maxSuccess < 1) maxSuccess = 1;
+            if (maxSuccess > 10000) maxSuccess = 10000;
+            numMaxSuccessfulRequests.Value = maxSuccess;
             UpdateStrategyLabel();
             UpdateCurrentProxyLabel();
         }
@@ -248,6 +253,18 @@ namespace ProxyForge.WinForms
         private void chkEnableProxy_CheckedChanged(object sender, EventArgs e)
         {
             Manager.IsEnabled = chkEnableProxy.Checked;
+            Manager.SaveToStorage();
+        }
+
+        private void chkAutoFetchProxy_CheckedChanged(object sender, EventArgs e)
+        {
+            Manager.EnableAutoFetch = chkAutoFetchProxy.Checked;
+            Manager.SaveToStorage();
+        }
+
+        private void numMaxSuccessfulRequests_ValueChanged(object sender, EventArgs e)
+        {
+            Manager.MaxSuccessfulRequestsPerProxy = (int)numMaxSuccessfulRequests.Value;
             Manager.SaveToStorage();
         }
 

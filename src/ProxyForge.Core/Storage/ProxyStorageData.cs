@@ -33,6 +33,21 @@ namespace ProxyForge.Core
         public bool AllowDirectFallback { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets maximum successful requests per proxy before automatic rotation.
+        /// </summary>
+        public int MaxSuccessfulRequestsPerProxy { get; set; } = 8;
+
+        /// <summary>
+        /// Gets or sets whether to rotate immediately to the next proxy when a request fails or returns an empty response.
+        /// </summary>
+        public bool RotateOnFailure { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets whether automatic background proxy fetching is enabled.
+        /// </summary>
+        public bool EnableAutoFetch { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the list of proxy server endpoints.
         /// </summary>
         public List<ProxyInfo> Proxies { get; set; } = new List<ProxyInfo>();

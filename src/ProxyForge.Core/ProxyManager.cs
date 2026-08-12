@@ -131,6 +131,29 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
+        /// Gets or sets maximum successful requests per proxy before automatic rotation.
+        /// </summary>
+        public int MaxSuccessfulRequestsPerProxy
+        {
+            get => Pool.MaxSuccessfulRequestsPerProxy;
+            set => Pool.MaxSuccessfulRequestsPerProxy = value;
+        }
+
+        /// <summary>
+        /// Gets or sets whether to rotate immediately to the next proxy when a request fails or returns an empty response.
+        /// </summary>
+        public bool RotateOnFailure
+        {
+            get => Pool.RotateOnFailure;
+            set => Pool.RotateOnFailure = value;
+        }
+
+        /// <summary>
+        /// Gets or sets whether automatic background proxy fetching is enabled.
+        /// </summary>
+        public bool EnableAutoFetch { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets background health auto-check interval.
         /// </summary>
         public TimeSpan AutoCheckInterval { get; set; } = TimeSpan.FromMinutes(5);
@@ -195,6 +218,9 @@ namespace ProxyForge.Core
                     Rotation = data.RotationMode;
                     Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
                     Pool.AllowDirectFallback = data.AllowDirectFallback;
+                    Pool.MaxSuccessfulRequestsPerProxy = data.MaxSuccessfulRequestsPerProxy > 0 ? data.MaxSuccessfulRequestsPerProxy : 8;
+                    Pool.RotateOnFailure = data.RotateOnFailure;
+                    EnableAutoFetch = data.EnableAutoFetch;
                     Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
                 }
             }
@@ -216,6 +242,9 @@ namespace ProxyForge.Core
                     Rotation = data.RotationMode;
                     Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
                     Pool.AllowDirectFallback = data.AllowDirectFallback;
+                    Pool.MaxSuccessfulRequestsPerProxy = data.MaxSuccessfulRequestsPerProxy > 0 ? data.MaxSuccessfulRequestsPerProxy : 8;
+                    Pool.RotateOnFailure = data.RotateOnFailure;
+                    EnableAutoFetch = data.EnableAutoFetch;
                     Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
                 }
             }
@@ -236,6 +265,9 @@ namespace ProxyForge.Core
                     RotationMode = Rotation,
                     RotateAfter = Pool.RotateAfter,
                     AllowDirectFallback = AllowDirectFallback,
+                    MaxSuccessfulRequestsPerProxy = MaxSuccessfulRequestsPerProxy,
+                    RotateOnFailure = RotateOnFailure,
+                    EnableAutoFetch = EnableAutoFetch,
                     Proxies = Pool.Proxies.ToList()
                 };
                 ActiveStorage.SaveData(data);
@@ -257,6 +289,9 @@ namespace ProxyForge.Core
                     RotationMode = Rotation,
                     RotateAfter = Pool.RotateAfter,
                     AllowDirectFallback = AllowDirectFallback,
+                    MaxSuccessfulRequestsPerProxy = MaxSuccessfulRequestsPerProxy,
+                    RotateOnFailure = RotateOnFailure,
+                    EnableAutoFetch = EnableAutoFetch,
                     Proxies = Pool.Proxies.ToList()
                 };
             }
@@ -365,6 +400,16 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
+        /// Record a failed request for a proxy, putting it on cooldown and rotating immediately if RotateOnFailure is true.
+        /// </summary>
+        public void RecordFailure(ProxyInfo proxy, TimeSpan? customCooldown = null)
+        {
+            if (proxy == null) return;
+            Pool.MarkFailed(proxy, customCooldown);
+            Statistics.RecordFailure(proxy);
+        }
+
+        /// <summary>
         /// Marks a proxy as successful.
         /// </summary>
         public void MarkAsSuccess(ProxyInfo proxy)
@@ -372,6 +417,24 @@ namespace ProxyForge.Core
             if (proxy == null) return;
             Pool.MarkSuccess(proxy);
             Statistics.RecordSuccess(proxy);
+        }
+
+        /// <summary>
+        /// Record a successful request for a proxy.
+        /// </summary>
+        public void RecordSuccess(ProxyInfo proxy)
+        {
+            if (proxy == null) return;
+            Pool.MarkSuccess(proxy);
+            Statistics.RecordSuccess(proxy);
+        }
+
+        /// <summary>
+        /// Forces immediate rotation to the next available proxy in the pool.
+        /// </summary>
+        public ProxyInfo? RotateToNext()
+        {
+            return Pool.RotateToNext();
         }
 
         /// <summary>

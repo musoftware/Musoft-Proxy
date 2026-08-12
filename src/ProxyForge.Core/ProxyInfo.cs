@@ -76,6 +76,11 @@ namespace ProxyForge.Core
         public int UsageCount { get; set; } = 0;
 
         /// <summary>
+        /// Gets or sets the count of successful requests fulfilled by this proxy since last rotation.
+        /// </summary>
+        public int SuccessfulRequestsCount { get; set; } = 0;
+
+        /// <summary>
         /// Gets or sets whether this proxy is explicitly banned.
         /// </summary>
         public bool IsBanned { get; set; } = false;

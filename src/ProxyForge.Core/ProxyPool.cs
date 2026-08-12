@@ -117,6 +117,17 @@ namespace ProxyForge.Core
         public bool AllowDirectFallback { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the maximum successful requests count per proxy before rotating to the next proxy.
+        /// Defaults to 8.
+        /// </summary>
+        public int MaxSuccessfulRequestsPerProxy { get; set; } = 8;
+
+        /// <summary>
+        /// Gets or sets whether to rotate immediately to the next proxy when a request fails or returns an empty response.
+        /// </summary>
+        public bool RotateOnFailure { get; set; } = true;
+
+        /// <summary>
         /// Occurs whenever a proxy rotation is triggered.
         /// </summary>
         public event EventHandler<ProxyRotatedEventArgs>? OnProxyRotated;
@@ -255,19 +266,75 @@ namespace ProxyForge.Core
         public BanDetector Detector { get; set; } = new BanDetector();
 
         /// <summary>
+        /// Forces rotation to the next available proxy in the pool.
+        /// </summary>
+        /// <returns>The newly selected <see cref="ProxyInfo"/> or null if none available.</returns>
+        public ProxyInfo? RotateToNext()
+        {
+            ProxyRotatedEventArgs? eventToRaise = null;
+            ProxyInfo? newProxy = null;
+
+            lock (_lock)
+            {
+                var poolList = AllowDirectFallback
+                    ? Proxies
+                    : Proxies.Where(p => !p.IsDirect).ToList();
+
+                var available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
+                if (available.Count == 0)
+                {
+                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
+                }
+                if (available.Count == 0)
+                {
+                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown).ToList();
+                }
+
+                if (available.Count > 0)
+                {
+                    ProxyInfo? oldProxy = _currentProxy;
+                    newProxy = Strategy.SelectProxy(available, _currentProxy);
+                    if (newProxy != null)
+                    {
+                        newProxy.LastUsed = DateTime.UtcNow;
+                        _currentProxy = newProxy;
+                        if (oldProxy != newProxy)
+                        {
+                            eventToRaise = new ProxyRotatedEventArgs(oldProxy, newProxy);
+                        }
+                    }
+                }
+            }
+
+            if (eventToRaise != null)
+            {
+                OnProxyRotated?.Invoke(this, eventToRaise);
+            }
+
+            return newProxy;
+        }
+
+        /// <summary>
         /// Marks a proxy request as failed, incrementing its fail count and placing it into cooldown.
         /// </summary>
         /// <param name="proxy">Target proxy.</param>
-        public void MarkFailed(ProxyInfo proxy)
+        /// <param name="cooldownDuration">Optional custom cooldown duration.</param>
+        public void MarkFailed(ProxyInfo proxy, TimeSpan? cooldownDuration = null)
         {
             if (proxy == null) return;
             lock (_lock)
             {
                 proxy.FailCount++;
+                proxy.CooldownUntil = DateTime.UtcNow.Add(cooldownDuration ?? CooldownDuration);
                 if (proxy.IsBanned || proxy.FailCount >= MaxFailCount)
                 {
-                    proxy.CooldownUntil = DateTime.UtcNow.Add(CooldownDuration);
                     proxy.IsLive = false;
+                }
+
+                if (RotateOnFailure)
+                {
+                    proxy.SuccessfulRequestsCount = 0;
+                    RotateToNext();
                 }
             }
         }
@@ -288,12 +355,17 @@ namespace ProxyForge.Core
                     proxyUsed.IsBanned = true;
                     proxyUsed.CooldownUntil = DateTime.UtcNow.Add(CooldownDuration);
                     proxyUsed.IsLive = false;
+                    if (RotateOnFailure)
+                    {
+                        proxyUsed.SuccessfulRequestsCount = 0;
+                        RotateToNext();
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Marks a proxy request as successful, resetting its failure counter.
+        /// Marks a proxy request as successful, resetting its failure counter and checking rotation thresholds.
         /// </summary>
         /// <param name="proxy">Target proxy.</param>
         public void MarkSuccess(ProxyInfo proxy)
@@ -303,6 +375,14 @@ namespace ProxyForge.Core
             {
                 proxy.FailCount = 0;
                 proxy.IsLive = true;
+                proxy.UsageCount++;
+                proxy.SuccessfulRequestsCount++;
+
+                if (MaxSuccessfulRequestsPerProxy > 0 && proxy.SuccessfulRequestsCount >= MaxSuccessfulRequestsPerProxy)
+                {
+                    proxy.SuccessfulRequestsCount = 0;
+                    RotateToNext();
+                }
             }
         }
 

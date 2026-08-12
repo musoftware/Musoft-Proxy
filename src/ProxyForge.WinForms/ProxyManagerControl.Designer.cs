@@ -37,6 +37,9 @@ namespace ProxyForge.WinForms
             this.lblRotateAfter = new System.Windows.Forms.Label();
             this.numRotateAfter = new System.Windows.Forms.NumericUpDown();
             this.lblActiveStrategy = new System.Windows.Forms.Label();
+            this.chkAutoFetchProxy = new System.Windows.Forms.CheckBox();
+            this.lblMaxSuccessfulRequests = new System.Windows.Forms.Label();
+            this.numMaxSuccessfulRequests = new System.Windows.Forms.NumericUpDown();
             this.lblCurrentProxy = new System.Windows.Forms.Label();
             this.lblSearch = new System.Windows.Forms.Label();
             this.txtSearch = new System.Windows.Forms.TextBox();
@@ -85,6 +88,7 @@ namespace ProxyForge.WinForms
 
             this.pnlTop.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numRotateAfter)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numMaxSuccessfulRequests)).BeginInit();
             this.pnlMain.SuspendLayout();
             this.pnlActions.SuspendLayout();
             this.grpAddSingle.SuspendLayout();
@@ -103,8 +107,11 @@ namespace ProxyForge.WinForms
             this.pnlTop.Controls.Add(this.lblRotateAfter);
             this.pnlTop.Controls.Add(this.numRotateAfter);
             this.pnlTop.Controls.Add(this.lblActiveStrategy);
+            this.pnlTop.Controls.Add(this.chkAutoFetchProxy);
+            this.pnlTop.Controls.Add(this.lblMaxSuccessfulRequests);
+            this.pnlTop.Controls.Add(this.numMaxSuccessfulRequests);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTop.Height = 45;
+            this.pnlTop.Height = 72;
             this.pnlTop.Padding = new System.Windows.Forms.Padding(10, 10, 10, 5);
 
             // chkEnableProxy
@@ -182,6 +189,37 @@ namespace ProxyForge.WinForms
             this.lblActiveStrategy.TabIndex = 7;
             this.lblActiveStrategy.Text = "Strategy: RoundRobin";
 
+            // chkAutoFetchProxy
+            this.chkAutoFetchProxy.AutoSize = true;
+            this.chkAutoFetchProxy.Checked = true;
+            this.chkAutoFetchProxy.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkAutoFetchProxy.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.chkAutoFetchProxy.Location = new System.Drawing.Point(10, 44);
+            this.chkAutoFetchProxy.Name = "chkAutoFetchProxy";
+            this.chkAutoFetchProxy.Size = new System.Drawing.Size(130, 19);
+            this.chkAutoFetchProxy.TabIndex = 8;
+            this.chkAutoFetchProxy.Text = "Auto Fetch Proxies";
+            this.chkAutoFetchProxy.UseVisualStyleBackColor = true;
+            this.chkAutoFetchProxy.CheckedChanged += new System.EventHandler(this.chkAutoFetchProxy_CheckedChanged);
+
+            // lblMaxSuccessfulRequests
+            this.lblMaxSuccessfulRequests.AutoSize = true;
+            this.lblMaxSuccessfulRequests.Location = new System.Drawing.Point(240, 45);
+            this.lblMaxSuccessfulRequests.Name = "lblMaxSuccessfulRequests";
+            this.lblMaxSuccessfulRequests.Size = new System.Drawing.Size(120, 15);
+            this.lblMaxSuccessfulRequests.TabIndex = 9;
+            this.lblMaxSuccessfulRequests.Text = "Max Success/Proxy:";
+
+            // numMaxSuccessfulRequests
+            this.numMaxSuccessfulRequests.Location = new System.Drawing.Point(365, 42);
+            this.numMaxSuccessfulRequests.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.numMaxSuccessfulRequests.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
+            this.numMaxSuccessfulRequests.Name = "numMaxSuccessfulRequests";
+            this.numMaxSuccessfulRequests.Size = new System.Drawing.Size(75, 23);
+            this.numMaxSuccessfulRequests.TabIndex = 10;
+            this.numMaxSuccessfulRequests.Value = new decimal(new int[] { 8, 0, 0, 0 });
+            this.numMaxSuccessfulRequests.ValueChanged += new System.EventHandler(this.numMaxSuccessfulRequests_ValueChanged);
+
             // 
             // pnlMain
             // 
@@ -191,7 +229,7 @@ namespace ProxyForge.WinForms
             this.pnlMain.Controls.Add(this.lstProxies, 0, 0);
             this.pnlMain.Controls.Add(this.pnlActions, 1, 0);
             this.pnlMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlMain.Location = new System.Drawing.Point(0, 45);
+            this.pnlMain.Location = new System.Drawing.Point(0, 72);
             this.pnlMain.Name = "pnlMain";
             this.pnlMain.RowCount = 1;
             this.pnlMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -496,6 +534,9 @@ namespace ProxyForge.WinForms
         private System.Windows.Forms.Label lblRotateAfter;
         private System.Windows.Forms.NumericUpDown numRotateAfter;
         private System.Windows.Forms.Label lblActiveStrategy;
+        private System.Windows.Forms.CheckBox chkAutoFetchProxy;
+        private System.Windows.Forms.Label lblMaxSuccessfulRequests;
+        private System.Windows.Forms.NumericUpDown numMaxSuccessfulRequests;
         private System.Windows.Forms.Label lblCurrentProxy;
         private System.Windows.Forms.Label lblSearch;
         private System.Windows.Forms.TextBox txtSearch;
