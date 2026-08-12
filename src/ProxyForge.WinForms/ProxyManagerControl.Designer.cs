@@ -51,6 +51,7 @@ namespace ProxyForge.WinForms
             this.colStatus = new System.Windows.Forms.ColumnHeader();
             this.colLatency = new System.Windows.Forms.ColumnHeader();
             this.colType = new System.Windows.Forms.ColumnHeader();
+            this.colUsage = new System.Windows.Forms.ColumnHeader();
 
             this.pnlActions = new System.Windows.Forms.FlowLayoutPanel();
             this.btnPaste = new System.Windows.Forms.Button();
@@ -205,7 +206,8 @@ namespace ProxyForge.WinForms
             this.colAnonymity,
             this.colStatus,
             this.colLatency,
-            this.colType});
+            this.colType,
+            this.colUsage});
             this.lstProxies.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lstProxies.FullRowSelect = true;
             this.lstProxies.GridLines = true;
@@ -233,6 +235,8 @@ namespace ProxyForge.WinForms
             this.colLatency.Width = 70;
             this.colType.Text = Resources.Strings.ColType;
             this.colType.Width = 65;
+            this.colUsage.Text = "Usage";
+            this.colUsage.Width = 65;
 
             // pnlActions
             this.pnlActions.Controls.Add(this.btnPaste);
@@ -506,6 +510,7 @@ namespace ProxyForge.WinForms
         private System.Windows.Forms.ColumnHeader colStatus;
         private System.Windows.Forms.ColumnHeader colLatency;
         private System.Windows.Forms.ColumnHeader colType;
+        private System.Windows.Forms.ColumnHeader colUsage;
 
         private System.Windows.Forms.FlowLayoutPanel pnlActions;
         private System.Windows.Forms.Button btnPaste;

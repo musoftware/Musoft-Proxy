@@ -71,6 +71,11 @@ namespace ProxyForge.Core
         public int FailCount { get; set; } = 0;
 
         /// <summary>
+        /// Gets or sets the total number of times this proxy has been used.
+        /// </summary>
+        public int UsageCount { get; set; } = 0;
+
+        /// <summary>
         /// Gets or sets whether this proxy is explicitly banned.
         /// </summary>
         public bool IsBanned { get; set; } = false;
@@ -81,9 +86,19 @@ namespace ProxyForge.Core
         public DateTime CooldownUntil { get; set; } = DateTime.MinValue;
 
         /// <summary>
+        /// Gets or sets whether this item represents a direct connection without a proxy server.
+        /// </summary>
+        public bool IsDirect { get; set; } = false;
+
+        /// <summary>
+        /// Singleton instance representing a direct connection without a proxy server.
+        /// </summary>
+        public static ProxyInfo Direct { get; } = new ProxyInfo("DIRECT", 0) { IsDirect = true, IsLive = true };
+
+        /// <summary>
         /// Gets whether the proxy is currently in cooldown mode due to recent failures.
         /// </summary>
-        public bool IsInCooldown => DateTime.UtcNow < CooldownUntil;
+        public bool IsInCooldown => !IsDirect && DateTime.UtcNow < CooldownUntil;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProxyInfo"/>.
@@ -125,6 +140,7 @@ namespace ProxyForge.Core
         /// <returns>Formatted proxy URL string (e.g. http://user:pass@host:port).</returns>
         public string ToUrl()
         {
+            if (IsDirect) return "direct://";
             string scheme = Type == ProxyType.SOCKS5 ? "socks5" : "http";
             if (!string.IsNullOrEmpty(Username))
             {
@@ -139,6 +155,7 @@ namespace ProxyForge.Core
         /// <returns>Compact proxy string.</returns>
         public override string ToString()
         {
+            if (IsDirect) return "DIRECT";
             if (!string.IsNullOrEmpty(Username))
             {
                 return $"{Host}:{Port}:{Username}:{Password}";
@@ -151,6 +168,11 @@ namespace ProxyForge.Core
         {
             if (obj is ProxyInfo other)
             {
+                if (IsDirect || other.IsDirect)
+                {
+                    return IsDirect == other.IsDirect;
+                }
+
                 return Type == other.Type &&
                        string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
                        Port == other.Port &&
@@ -163,6 +185,7 @@ namespace ProxyForge.Core
         /// <inheritdoc />
         public override int GetHashCode()
         {
+            if (IsDirect) return "DIRECT".GetHashCode();
             unchecked
             {
                 int hash = 17;

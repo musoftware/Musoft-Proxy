@@ -98,6 +98,11 @@ namespace ProxyForge.Core
         public List<ProxyInfo> Proxies => Pool.Proxies;
 
         /// <summary>
+        /// Gets the currently selected active proxy.
+        /// </summary>
+        public ProxyInfo? CurrentProxy => Pool.CurrentProxy;
+
+        /// <summary>
         /// Gets or sets whether proxy routing is enabled.
         /// </summary>
         public bool IsEnabled { get; set; } = true;
@@ -114,6 +119,15 @@ namespace ProxyForge.Core
         {
             get => Pool.Mode;
             set => Pool.Mode = value;
+        }
+
+        /// <summary>
+        /// Gets or sets whether direct connection is included in pool rotation and allowed as fallback.
+        /// </summary>
+        public bool AllowDirectFallback
+        {
+            get => Pool.AllowDirectFallback;
+            set => Pool.AllowDirectFallback = value;
         }
 
         /// <summary>
@@ -180,6 +194,7 @@ namespace ProxyForge.Core
                     DefaultType = data.DefaultType;
                     Rotation = data.RotationMode;
                     Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
+                    Pool.AllowDirectFallback = data.AllowDirectFallback;
                     Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
                 }
             }
@@ -200,6 +215,7 @@ namespace ProxyForge.Core
                     DefaultType = data.DefaultType;
                     Rotation = data.RotationMode;
                     Pool.RotateAfter = data.RotateAfter > 0 ? data.RotateAfter : 10;
+                    Pool.AllowDirectFallback = data.AllowDirectFallback;
                     Pool.Proxies = data.Proxies ?? new List<ProxyInfo>();
                 }
             }
@@ -219,6 +235,7 @@ namespace ProxyForge.Core
                     DefaultType = DefaultType,
                     RotationMode = Rotation,
                     RotateAfter = Pool.RotateAfter,
+                    AllowDirectFallback = AllowDirectFallback,
                     Proxies = Pool.Proxies.ToList()
                 };
                 ActiveStorage.SaveData(data);
@@ -239,6 +256,7 @@ namespace ProxyForge.Core
                     DefaultType = DefaultType,
                     RotationMode = Rotation,
                     RotateAfter = Pool.RotateAfter,
+                    AllowDirectFallback = AllowDirectFallback,
                     Proxies = Pool.Proxies.ToList()
                 };
             }

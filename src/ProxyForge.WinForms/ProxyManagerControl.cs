@@ -184,6 +184,7 @@ namespace ProxyForge.WinForms
 
             item.SubItems.Add(latencyText);
             item.SubItems.Add(p.Type.ToString());
+            item.SubItems.Add(p.UsageCount.ToString());
 
             return item;
         }
@@ -207,6 +208,10 @@ namespace ProxyForge.WinForms
                     item.SubItems[5].Text = statusText;
                     item.SubItems[5].ForeColor = statusColor;
                     item.SubItems[6].Text = proxy.LatencyMs >= 0 ? $"{proxy.LatencyMs} ms" : "-";
+                    if (item.SubItems.Count > 8)
+                    {
+                        item.SubItems[8].Text = proxy.UsageCount.ToString();
+                    }
                     break;
                 }
             }

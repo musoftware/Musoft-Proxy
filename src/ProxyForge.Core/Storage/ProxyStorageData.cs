@@ -28,6 +28,11 @@ namespace ProxyForge.Core
         public int RotateAfter { get; set; } = 10;
 
         /// <summary>
+        /// Gets or sets whether direct connection is included in pool rotation and allowed as fallback.
+        /// </summary>
+        public bool AllowDirectFallback { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the list of proxy server endpoints.
         /// </summary>
         public List<ProxyInfo> Proxies { get; set; } = new List<ProxyInfo>();

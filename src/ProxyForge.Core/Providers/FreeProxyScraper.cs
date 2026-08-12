@@ -172,10 +172,10 @@ namespace ProxyForge.Core
         /// Discovers new proxy list URLs using DuckDuckGo search queries and adds valid ones to active sources.
         /// </summary>
         /// <returns>Number of newly discovered and added proxy list sources.</returns>
-        public async Task<int> DiscoverAndAddNewSourcesAsync()
+        public async Task<int> DiscoverAndAddNewSourcesAsync(int maxResults = 500, int maxPagesPerQuery = 20)
         {
             var discoverer = new DynamicSourceDiscoverer();
-            var urls = await discoverer.DiscoverProxyListUrlsAsync().ConfigureAwait(false);
+            var urls = await discoverer.DiscoverProxyListUrlsAsync(maxResults: maxResults, maxPagesPerQuery: maxPagesPerQuery).ConfigureAwait(false);
             int added = 0;
 
             foreach (var url in urls)

@@ -58,7 +58,21 @@ namespace ProxyForge.Core
             var proxy = _manager.GetNext();
             _currentProxy.Value = proxy;
 
-            if (proxy == null) return null;
+            if (proxy == null)
+            {
+                if (!_manager.AllowDirectFallback)
+                {
+                    // Block direct connection fallback when proxy mode is active and direct fallback is disabled
+                    return new Uri("http://127.0.0.1:59999");
+                }
+                return null;
+            }
+
+            if (proxy.IsDirect)
+            {
+                // Direct connection explicitly selected as part of pool rotation
+                return null;
+            }
 
             string scheme = proxy.Type == ProxyType.SOCKS5 ? "socks5" : "http";
             return new Uri($"{scheme}://{proxy.Host}:{proxy.Port}");

@@ -63,6 +63,20 @@ namespace ProxyForge.Core
         }
 
         /// <summary>
+        /// Gets the currently selected active proxy.
+        /// </summary>
+        public ProxyInfo? CurrentProxy
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _currentProxy;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the rotation strategy algorithm.
         /// </summary>
         public IRotationStrategy Strategy { get; set; } = new RoundRobinStrategy();
@@ -98,6 +112,11 @@ namespace ProxyForge.Core
         public TimeSpan CooldownDuration { get; set; } = TimeSpan.FromMinutes(10);
 
         /// <summary>
+        /// Gets or sets whether direct connection is included in pool rotation and allowed as fallback.
+        /// </summary>
+        public bool AllowDirectFallback { get; set; } = true;
+
+        /// <summary>
         /// Occurs whenever a proxy rotation is triggered.
         /// </summary>
         public event EventHandler<ProxyRotatedEventArgs>? OnProxyRotated;
@@ -114,19 +133,28 @@ namespace ProxyForge.Core
 
             lock (_lock)
             {
+                var poolList = AllowDirectFallback
+                    ? Proxies
+                    : Proxies.Where(p => !p.IsDirect).ToList();
+
                 // Priority 1: Confirmed working proxies (IsLive == true, non-banned, not in cooldown)
-                var available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
+                var available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == true).ToList();
 
                 // Priority 2: Fallback to untested proxies (IsLive == null, non-banned, not in cooldown)
                 if (available.Count == 0)
                 {
-                    available = Proxies.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
+                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown && p.IsLive == null).ToList();
                 }
 
-                // Priority 3: Final fallback to non-banned proxies
+                // Priority 3: Final fallback to non-banned proxies not in cooldown
                 if (available.Count == 0)
                 {
-                    available = Proxies.Where(p => !p.IsBanned).ToList();
+                    available = poolList.Where(p => !p.IsBanned && !p.IsInCooldown).ToList();
+                }
+
+                if (AllowDirectFallback && !available.Any(p => p.IsDirect))
+                {
+                    available.Add(ProxyInfo.Direct);
                 }
 
                 if (available.Count == 0) return null;
@@ -175,6 +203,7 @@ namespace ProxyForge.Core
                                 else
                                 {
                                     stickyProxy.LastUsed = DateTime.UtcNow;
+                                    stickyProxy.UsageCount++;
                                     return stickyProxy;
                                 }
                             }
@@ -190,6 +219,7 @@ namespace ProxyForge.Core
                     if (newProxy != null)
                     {
                         newProxy.LastUsed = DateTime.UtcNow;
+                        newProxy.UsageCount++;
                         _currentProxy = newProxy;
 
                         if (oldProxy != newProxy)
